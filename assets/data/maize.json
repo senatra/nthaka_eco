@@ -1,0 +1,61 @@
+{
+    "diseases": [
+      {
+        "name": "Healthy",
+        "symptoms": ["No visible symptoms"],
+        "causes": ["Healthy plant"],
+        "treatments": ["Maintain proper care and conditions"],
+        "prevention": ["Good agricultural practices"]
+      },
+      {
+        "name": "Streak Virus",
+        "symptoms": ["Yellow streaks on leaves", "Stunted growth", "Leaf discoloration"],
+        "causes": ["Viral infection"],
+        "treatments": ["No specific cure, focus on prevention"],
+        "prevention": ["Plant resistant varieties", "Control insect vectors"]
+      },
+      {
+        "name": "Gray Leaf spot",
+        "symptoms": ["Gray lesions on leaves", "Circular spots", "Leaf wilting"],
+        "causes": ["Fungus - Cercospora zeae-maydis"],
+        "treatments": ["Fungicides", "Crop rotation"],
+        "prevention": ["Plant resistant hybrids", "Good field sanitation"]
+      },
+      {
+        "name": "Leaf Blight",
+        "symptoms": ["Small, circular to elongated spots on leaves", "Leaf browning"],
+        "causes": ["Bacterial or fungal infection"],
+        "treatments": ["Fungicides", "Remove infected leaves"],
+        "prevention": ["Avoid overhead watering", "Crop rotation"]
+      },
+      {
+        "name": "Fall Armyworm",
+        "symptoms": ["Irregular feeding patterns on leaves", "Holes in leaves"],
+        "causes": ["Insect - Fall Armyworm"],
+        "treatments": ["Insecticides", "Biological control agents"],
+        "prevention": ["Early detection and monitoring", "Plant resistant crops"]
+      },
+      {
+        "name": "Maize Stem Borer",
+        "symptoms": ["Entry holes in stems", "Bore dust", "Wilting plants"],
+        "causes": ["Insect - Stem Borer"],
+        "treatments": ["Biological control", "Remove infested stems"],
+        "prevention": ["Field sanitation", "Pheromone traps"]
+      },
+      {
+        "name": "Ear Rot",
+        "symptoms": ["Discolored or rotten ears", "Mold growth"],
+        "causes": ["Fungus - Aspergillus, Fusarium"],
+        "treatments": ["Fungicides", "Crop rotation"],
+        "prevention": ["Plant resistant varieties", "Proper drying of harvested maize"]
+      },
+      {
+        "name": "Common Rust",
+        "symptoms": ["Small, circular, rust-colored spots on leaves"],
+        "causes": ["Fungus - Puccinia sorghi"],
+        "treatments": ["Fungicides", "Remove infected leaves"],
+        "prevention": ["Plant resistant varieties", "Good field hygiene"]
+      }
+    ]
+  }
+  

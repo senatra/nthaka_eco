@@ -1,0 +1,5 @@
+0 Red rust
+1 Leaf miner
+2 Healthy
+3 Gumosis
+4 Anthracnose

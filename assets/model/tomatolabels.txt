@@ -1,0 +1,5 @@
+0 Healthy
+1 Leaf Blight
+2 Leaf Curl
+3 Verticulium Wilt
+4 Septoria Leaf Spot

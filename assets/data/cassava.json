@@ -1,0 +1,39 @@
+{
+    "diseases":[
+              {
+          "name": "Healthy",
+          "symptoms": ["No visible signs of disease or pest damage", "Normal growth and color"],
+          "causes": ["Proper care", "Ideal growing conditions"],
+          "treatments": ["Regular monitoring and maintenance"],
+          "prevention": ["Provide adequate water, sunlight, and nutrients", "Practice good farming practices"]
+        },
+        {
+          "name": "Mosaic",
+          "symptoms": ["Irregular yellow or white patches on leaves", "Stunted growth", "Leaf distortion"],
+          "causes": ["Viral infection, often transmitted by whiteflies or aphids"],
+          "treatments": ["No cure for viral infections in plants", "Remove and destroy infected plants to prevent spread"],
+          "prevention": ["Plant disease-free cuttings", "Control whitefly and aphid populations"]
+        },
+        {
+          "name": "Green mite",
+          "symptoms": ["Yellowish stippling on leaves", "Fine webbing on the underside of leaves"],
+          "causes": ["Infestation by the green mite (Mononychellus spp.)"],
+          "treatments": ["Use insecticidal soap or neem oil", "Introduce natural predators like ladybugs"],
+          "prevention": ["Regularly inspect plants for early signs of infestation", "Maintain garden hygiene"]
+        },
+        {
+          "name": "Brown spot",
+          "symptoms": ["Circular to irregular brown spots on leaves", "Leaf yellowing and defoliation"],
+          "causes": ["Fungal infection often exacerbated by high humidity"],
+          "treatments": ["Prune affected leaves", "Apply fungicides like copper-based sprays"],
+          "prevention": ["Ensure good air circulation", "Avoid overhead watering"]
+        },
+        {
+          "name": "Bacterial blight",
+          "symptoms": ["Water-soaked lesions on leaves", "Leaf wilting and dieback"],
+          "causes": ["Bacterial infection, often enters through wounds or cuts"],
+          "treatments": ["Prune infected areas", "Apply appropriate bactericides or antibiotics"],
+          "prevention": ["Avoid wounds on plants", "Properly sanitize tools to prevent spread"]
+        }
+      ]
+}

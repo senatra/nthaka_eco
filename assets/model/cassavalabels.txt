@@ -1,0 +1,5 @@
+0 Healthy
+1 Bacterial Blight
+2 Brown Spot
+3 Green Mite
+4 Mosaic

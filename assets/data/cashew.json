@@ -1,0 +1,40 @@
+{
+    "diseases":[
+        {
+          "name": "Healthy",
+          "symptoms": ["No visible signs of disease or pest damage", "Normal growth and color"],
+          "causes": ["Proper care", "Ideal growing conditions"],
+          "treatments": ["Regular monitoring and maintenance"],
+          "prevention": ["Provide adequate water, sunlight, and nutrients", "Practice good gardening practices"]
+        },
+        {
+          "name": "Red rust",
+          "symptoms": ["Reddish spots or rust-colored pustules on leaves", "Stunted growth"],
+          "causes": ["Fungal infection due to Puccinia species"],
+          "treatments": ["Use fungicides like copper-based sprays", "Remove infected leaves"],
+          "prevention": ["Plant disease-resistant varieties", "Ensure proper air circulation"]
+        },
+        {
+          "name": "Leaf miner",
+          "symptoms": ["Visible tunnels or trails on leaves made by larvae", "Discolored or distorted leaves"],
+          "causes": ["Insect infestation by larvae of various fly species"],
+          "treatments": ["Prune affected leaves", "Use insecticidal soap or neem oil"],
+          "prevention": ["Introduce natural predators", "Maintain garden hygiene"]
+        },
+        {
+          "name": "Gumosis",
+          "symptoms": ["Oozing sap", "Gum-like substance on bark", "Wilting leaves"],
+          "causes": ["Bacterial or fungal infection", "Physical damage"],
+          "treatments": ["Prune infected areas", "Apply appropriate fungicides or antibiotics"],
+          "prevention": ["Avoid wounds on trees", "Properly prune and maintain tree health"]
+        },
+        {
+          "name": "Anthracnose",
+          "symptoms": ["Dark, sunken lesions on leaves or fruits", "Premature leaf drop"],
+          "causes": ["Fungal infection, often thrives in damp conditions"],
+          "treatments": ["Prune infected parts", "Apply fungicides like chlorothalonil"],
+          "prevention": ["Ensure good air circulation", "Remove and destroy infected plant material"]
+        }
+      ]
+  }
+  

@@ -1,0 +1,7 @@
+0 Healthy
+1 Common Rust
+2 Ear Rot
+3 Grey Leaf Spot
+4 Leaf Blight
+5 Maize Stem Borer
+6 Streak Virus

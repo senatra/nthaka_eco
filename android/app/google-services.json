@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "977014501663",
+    "firebase_url": "https://nthaka-eco-default-rtdb.firebaseio.com",
+    "project_id": "nthaka-eco",
+    "storage_bucket": "nthaka-eco.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:977014501663:android:073abe2a9cb856d495c02a",
+        "android_client_info": {
+          "package_name": "com.example.nthaka_eco"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB11TJAZtMDSIgBL3Q1_81svd_rx8SUWkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

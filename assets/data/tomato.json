@@ -1,0 +1,39 @@
+{
+    "diseases":[
+    {
+      "name": "Healthy",
+      "symptoms": ["No visible signs of disease or pest damage", "Normal growth and color"],
+      "causes": ["Proper care", "Ideal growing conditions"],
+      "treatments": ["Regular monitoring and maintenance"],
+      "prevention": ["Provide adequate water, sunlight, and nutrients", "Practice good gardening practices"]
+    },
+    {
+      "name": "Leaf Blight",
+      "symptoms": ["Brown or black spots on leaves", "Leaf wilting and yellowing"],
+      "causes": ["Fungal infection (often by fungi like Alternaria or Septoria)"],
+      "treatments": ["Prune affected leaves", "Apply fungicides like chlorothalonil"],
+      "prevention": ["Avoid overhead watering", "Remove and destroy infected plant material"]
+    },
+    {
+      "name": "Leaf Curl",
+      "symptoms": ["Upward curling of leaves", "Abnormal leaf thickening"],
+      "causes": ["Viral infection, often transmitted by aphids or whiteflies"],
+      "treatments": ["No cure for viral infections in plants", "Remove and destroy infected plants to prevent spread"],
+      "prevention": ["Control aphid and whitefly populations", "Use disease-resistant varieties if available"]
+    },
+    {
+      "name": "Verticillium Wilt",
+      "symptoms": ["Yellowing and wilting of lower leaves", "Stunted growth"],
+      "causes": ["Fungal infection by Verticillium species"],
+      "treatments": ["No cure once plant is infected", "Rotate crops and use disease-resistant varieties"],
+      "prevention": ["Avoid planting susceptible crops in infected soil", "Practice crop rotation"]
+    },
+    {
+      "name": "Septoria Leaf Spot",
+      "symptoms": ["Small dark spots with light centers on leaves", "Leaf yellowing and defoliation"],
+      "causes": ["Fungal infection caused by Septoria lycopersici"],
+      "treatments": ["Prune affected leaves", "Apply fungicides like copper-based sprays"],
+      "prevention": ["Provide good air circulation", "Avoid overhead watering"]
+    }
+  ]
+}
