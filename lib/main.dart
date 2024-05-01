@@ -4,6 +4,7 @@
   import 'package:firebase_auth/firebase_auth.dart';
   import 'package:firebase_core/firebase_core.dart';
   import 'package:nthaka_eco/screens/authentication/login_screen.dart';
+import 'package:nthaka_eco/screens/home/home_screen.dart';
   import 'package:nthaka_eco/screens/onboarding/onboarding_screen.dart';
 
   void main() async {
@@ -35,7 +36,7 @@
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.active) {
               final User? user = snapshot.data;
-              return user != null ? const LoginScreen() : const OnBoardingScreen();
+              return user != null ? const LoginScreen() : const HomeScreen();
             } else {
               return const Center(child: CircularProgressIndicator());
             }
