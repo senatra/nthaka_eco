@@ -1,8 +1,8 @@
 // register_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:nthaka_eco/widgets/input_field.dart';
-import 'package:nthaka_eco/widgets/form_button.dart';
+import 'package:nthaka_eco/global/widgets/input_field.dart';
+import 'package:nthaka_eco/global/widgets/form_button.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function(String? email, String? password)? onSubmitted;
@@ -83,22 +83,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: ListView(
           children: [
             SizedBox(height: screenHeight * .12),
-            const Text(
-              'Create Account,',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+            const Row(
+                children: [
+                 const Image(
+                    image: AssetImage('assets/images/app/nthakalogo.png'),
+                    width: 50, 
+                    height: 50,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'Create Account',
+                    style: TextStyle(
+                      fontSize: 22,
             ),
-            SizedBox(height: screenHeight * .01),
-            Text(
-              'Sign up to get started!',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.black.withOpacity(.6),
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: screenHeight * .12),
+
+            SizedBox(height: screenHeight * .025),
             InputField(
               onChanged: (value) {
                 setState(() {
@@ -136,25 +138,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
               obscureText: true,
               textInputAction: TextInputAction.done,
             ),
-            SizedBox(
-              height: screenHeight * .075,
-            ),
+            SizedBox( height: screenHeight * .025),
             FormButton(
               text: 'Sign Up',
               onPressed: submit,
             ),
             SizedBox(
-              height: screenHeight * .125,
+              height: 10,
             ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: RichText(
                 text: const TextSpan(
-                  text: "I'm already a member, ",
+                  text: "Already have an Account? ",
                   style: TextStyle(color: Colors.black),
                   children: [
                     TextSpan(
-                      text: 'Sign In',
+                      text: 'Sign In Here!',
                       style: TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.bold,

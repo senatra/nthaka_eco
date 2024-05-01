@@ -1,8 +1,9 @@
 // login_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:nthaka_eco/widgets/input_field.dart';
-import 'package:nthaka_eco/widgets/form_button.dart';
+import 'package:nthaka_eco/components/colors.dart';
+import 'package:nthaka_eco/global/widgets/input_field.dart';
+import 'package:nthaka_eco/global/widgets/form_button.dart';
 import 'package:nthaka_eco/screens/authentication/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -58,15 +59,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return isValid;
   }
-
   void submit() {
     if (validate()) {
       if (widget.onSubmitted != null) {
         widget.onSubmitted!(email, password);
       }
     }
-  }
-
+    }
+  
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
@@ -77,22 +77,40 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ListView(
           children: [
             SizedBox(height: screenHeight * .12),
-            const Text(
-              'Welcome,',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+           const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image(
+                      image: AssetImage('assets/images/app/nthakalogo.png'),
+                      width: 150, 
+                      height: 150,
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      'Welcome Back!',
+                      style: TextStyle(
+                        fontSize: 28,
+                      ),
+                    ),
+                     SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      'Log in to Account.',
+                      style: TextStyle(
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 15,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: screenHeight * .01),
-            Text(
-              'Sign in to continue!',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.black.withOpacity(.6),
-              ),
-            ),
-            SizedBox(height: screenHeight * .12),
+
             InputField(
               onChanged: (value) {
                 setState(() {
@@ -125,20 +143,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: kOtherColor,
                   ),
                 ),
               ),
             ),
-            SizedBox(
-              height: screenHeight * .075,
+            const SizedBox(
+              height: 5,
             ),
             FormButton(
-              text: 'Log In',
+              text: 'Log in',
               onPressed: submit,
             ),
-            SizedBox(
-              height: screenHeight * .15,
+           const SizedBox(
+              height: 10,
             ),
             TextButton(
               onPressed: () => Navigator.push(
@@ -149,14 +167,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: RichText(
                 text: const TextSpan(
-                  text: "I'm a new user, ",
+                  text: "Don't have an Account?, ",
                   style: TextStyle(color: Colors.black),
                   children: [
                     TextSpan(
-                      text: 'Sign Up',
+                      text: 'Sign Up Here!',
                       style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
+                        color: kOtherColor,
                       ),
                     ),
                   ],

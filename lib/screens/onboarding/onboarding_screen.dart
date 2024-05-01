@@ -4,12 +4,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nthaka_eco/components/colors.dart';
+import 'package:nthaka_eco/screens/authentication/login_screen.dart';
+import 'package:nthaka_eco/screens/authentication/register_screen.dart';
 
 // OnBoarding content Model
-class OnBoard {
+class OnboardingScreen {
   final String image, title, description;
 
-  OnBoard({
+  OnboardingScreen({
     required this.image,
     required this.title,
     required this.description,
@@ -17,31 +19,24 @@ class OnBoard {
 }
 
 // OnBoarding content list
-final List<OnBoard> demoData = [
-  OnBoard(
-    image: "assets/images/on-boarding/slider1.jpg",
+final List<OnboardingScreen> demoData = [
+  OnboardingScreen(
+    image: "assets/images/onboarding/slider1.png",
     title: "Title 01",
-    description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    description:"Welcome to Nthaka.Eco!",
   ),
-  OnBoard(
-    image: "assets/images/on-boarding/slider2.jpg",
+  OnboardingScreen(
+    image: "assets/images/onboarding/slider2.png",
     title: "Title 02",
     description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "Intuitive tools for time management, you'll effortlessly organize your tasks, schedules, and activities",
   ),
-  OnBoard(
-    image: "assets/images/on-boarding/slider3.png",
-    title: "Title 03",
-    description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  ),
-  OnBoard(
-    image: "assets/images/on-boarding/onboarding4.png",
-    title: "Title 04",
-    description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  ),
+  // OnboardingScreen(
+  //   image: "assets/images/onboarding/slider3.png",
+  //   title: "Title 03",
+  //   description:
+  //       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+  // ),
 ];
 
 // OnBoardingScreen
@@ -91,24 +86,10 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         // Background gradient
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[
-              Color(0xff1f005c),
-              Color(0xff5b0060),
-              Color(0xff870160),
-              Color(0xffac255e),
-              Color(0xffca485c),
-              Color(0xffe16b5c),
-              Color(0xfff39060),
-              Color(0xffffb56b),
-            ],
-            tileMode: TileMode.mirror,
-          ),
+          color: Color(0xFFFFFFFF)
         ),
         child: Column(
           children: [
@@ -148,29 +129,36 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
               ),
             ),
             // Privacy policy area
-            const Text("By proceeding you agree to our Privacy Policy"),
+            const Text("Revolutionizing Plant Health",
+             style: TextStyle(
+             color: Colors.black,
+             fontSize: 15,
+                    ),),
+
             // White space
             const SizedBox(
-              height: 16,
+              height: 10,
             ),
             // Button area
             InkWell(
-              onTap: () {
-                print("Button clicked!");
-              },
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RegisterScreen(),
+                ),
+              ),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 48),
-                height: Get.height * 0.075,
+                margin: const EdgeInsets.only(bottom: 20),
+                height: Get.height * 0.06,
                 width: Get.width,
                 decoration: BoxDecoration(
-                  color: Colors.purple,
+                  color: kPrimaryColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Center(
                   child: Text(
-                    "Login / Registration",
+                    "Register",
                     style: TextStyle(
-                      fontFamily: "HappyMonkey",
                       color: Colors.white,
                       fontSize: 18,
                     ),
@@ -178,6 +166,36 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                 ),
               ),
             ),
+                       
+            InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LoginScreen(),
+                ),
+              ),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 48),
+                height: Get.height * 0.06,
+                width: Get.width,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kPrimaryColor), // Assuming kPrimary is a Color
+            ),
+                child: const Center(
+                  child: Text(
+                    "Login",
+                    style: TextStyle(
+                      color: kPrimaryColor,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+                   
+
           ],
         ),
       ),
@@ -203,28 +221,20 @@ class OnBoardContent extends StatelessWidget {
     return Column(
       children: [
         const Spacer(),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(
-          height: 16,
-        ),
+
+        const Spacer(),
+        Image.asset(image),
+        const Spacer(),
         Text(
           description,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
+            color: Colors.black,
+            fontSize: 17,
             fontWeight: FontWeight.bold,
+            fontStyle: FontStyle.italic
           ),
         ),
-        const Spacer(),
-        Image.asset(image),
         const Spacer(),
       ],
     );
