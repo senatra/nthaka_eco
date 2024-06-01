@@ -1,10 +1,13 @@
 // login_screen.dart
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:nthaka_eco/components/colors.dart';
 import 'package:nthaka_eco/global/widgets/input_field.dart';
 import 'package:nthaka_eco/global/widgets/form_button.dart';
+import 'package:nthaka_eco/screens/api/authentication.dart';
 import 'package:nthaka_eco/screens/authentication/register_screen.dart';
+import 'package:nthaka_eco/screens/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function(String? email, String? password)? onSubmitted;
@@ -59,14 +62,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return isValid;
   }
-  void submit() {
+
+  Future<void> submit() async {
     if (validate()) {
       if (widget.onSubmitted != null) {
         widget.onSubmitted!(email, password);
+      } else {
+        User? user = await loginUsingEmailPassword(
+          email: email,
+          password: password,
+          context: context,
+        );
+        if (user != null) {
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        } else {
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.red,
+              content: Text('Error: Incorrect Email Or Password'),
+            ),
+          );
+        }
       }
     }
-    }
-  
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
@@ -77,40 +101,39 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ListView(
           children: [
             SizedBox(height: screenHeight * .12),
-           const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image(
-                      image: AssetImage('assets/images/app/nthakalogo.png'),
-                      width: 150, 
-                      height: 150,
+            const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image(
+                    image: AssetImage('assets/images/app/nthakalogo.png'),
+                    width: 150,
+                    height: 150,
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Text(
+                    'Welcome Back!',
+                    style: TextStyle(
+                      fontSize: 28,
                     ),
-                    SizedBox(
-                      height: 10,
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Text(
+                    'Log in to Account.',
+                    style: TextStyle(
+                      fontSize: 14,
                     ),
-                    Text(
-                      'Welcome Back!',
-                      style: TextStyle(
-                        fontSize: 28,
-                      ),
-                    ),
-                     SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      'Log in to Account.',
-                      style: TextStyle(
-                        fontSize: 14,
-                      ),
-                    ),
-                    SizedBox(
-                      height: 15,
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(
+                    height: 15,
+                  ),
+                ],
               ),
-
+            ),
             InputField(
               onChanged: (value) {
                 setState(() {
@@ -155,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
               text: 'Log in',
               onPressed: submit,
             ),
-           const SizedBox(
+            const SizedBox(
               height: 10,
             ),
             TextButton(

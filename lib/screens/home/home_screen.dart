@@ -1,9 +1,12 @@
+import 'package:fluentui_icons/fluentui_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:nthaka_eco/components/colors.dart';
 import 'package:nthaka_eco/global/widgets/app_layout.dart';
+import 'package:nthaka_eco/global/widgets/app_styles.dart';
 import 'package:nthaka_eco/screens/home/profile_screen.dart';
 
-class HomeScreen extends StatefulWidget{
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
@@ -12,15 +15,14 @@ class HomeScreen extends StatefulWidget{
 
 class _HomeScreenState extends State<HomeScreen> {
   String greeting = '';
-  final TextEditingController _searchController = TextEditingController();
   List<String> crops = ['Maize', 'Tomato', 'Cassava', 'Cashew'];
   List<String> displayedCrops = [];
 
   @override
   void initState() {
-    displayedCrops = crops;
     super.initState();
     greeting = AppLayout.getGreeting();
+    displayedCrops = crops;
   }
 
   void _filterCrops(String query) {
@@ -32,135 +34,217 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: Material(
-      child: Column(
-        children: [
-          SizedBox(
-            width: MediaQuery.of(context).size.width,
-            child: Column(
-              children: [
-                const Gap(25),
-
-          Padding(
-                  padding: const EdgeInsets.all(25.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            greeting,
-                            // style: Styles.headLineStyle3,
-                          ),
-                          const Gap(5),
-                          Text(
-                            "My Home",
-                            // style: Styles.headLineStyle,
-                          ),
-                        ],
-                      ),
-                      Container(
+        child: ListView(
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Home",
+                      style: Styles.headLineStyle,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (context) => const ProfilePage()),
+                        );
+                      },
+                      child: Container(
                         height: 50,
                         width: 50,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: FloatingActionButton(
-                            onPressed: () {
-                               Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                                );
-                            },
-                            backgroundColor: Colors.green,
-                            child: const Image(
-                              image: AssetImage('assets/images/logo.png'),
+                        child: const Image(
+                          image: AssetImage('assets/images/app/nthakalogo.png'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Padding(
+              padding: const EdgeInsets.all(25.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kOtherColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
                             ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 50.0),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.thermostat,
+                                color: Colors.white,
+                              ),
+                              SizedBox(width: 10.0),
+                              Text(
+                                '36.7 °C',
+                                style: TextStyle(
+                                  fontSize: 24.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-          TextFormField(
-            controller: _searchController,
-            onChanged: _filterCrops,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              hintText: 'Search Plants',
-              contentPadding: EdgeInsets.symmetric(
-              horizontal: MediaQuery.of(context).size.width * 0.1,
-              vertical: 15, 
-            ),
-            ),
-          ),
-        ],
-      ),
-    ),
-
-        const SizedBox(height: 15),
-        const Padding(
-        padding: EdgeInsets.all(15.0), 
-        child: Row(
+                  const SizedBox(height: 25),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Features:',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(FluentSystemIcons.ic_fluent_leaf_two_filled, color: Colors.black, size: 30.0,),
+                      
+                          label: const Text('Plant Disease Detection', style: TextStyle(fontSize: 18, color: Colors.black,)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 45.0),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                     Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Text(
-              'Select Your Crop:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(
+                  FluentSystemIcons.ic_fluent_book_number_filled,
+                  color: Colors.black,
+                  size: 30.0,
+                ),
+                label: const Text(
+                  'Inventory',
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(
+                  FluentSystemIcons.ic_fluent_pen_settings_filled,
+                  color: Colors.black,
+                  size: 30.0,
+                ),
+                label: const Text(
+                  'Management',
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                ),
+              ),
             ),
           ],
-          ),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(
+                  FluentSystemIcons.ic_fluent_bank_filled,
+                  color: Colors.black,
+                  size: 30.0,
+                ),
+                label: const Text(
+                  'Sales & Purchases',
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(
+                  FluentSystemIcons.ic_fluent_location_filled,
+                  color: Colors.black,
+                  size: 30.0,
+                ),
+                label: const Text(
+                  'Statistics',
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                ),
+              ),
+            ),
+          ],
+        ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ListView.builder(
-      shrinkWrap: true,
-      itemCount: displayedCrops.length,
-      itemBuilder: (context, index) {
-      return Column(
-      children: [
-      //   Padding(
-      //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      //     child: ElevatedButton(
-      //       onPressed: () {
-      //         Navigator.push(
-      //           context,
-      //           MaterialPageRoute(builder: (context) => Pdd(plant: displayedCrops[index])),
-      //         );
-      //       },
-      //       style: ElevatedButton.styleFrom(
-      //         backgroundColor: Styles.primaryColor, // Change color as needed
-      //         padding:  const EdgeInsets.all(15.0),
-      //       ),
-      //       child: Row(
-      //         children: [
-      //           Padding(
-      //             padding: const EdgeInsets.all(8.0),
-      //             child: Image.asset(
-      //               'assets/images/${displayedCrops[index].toLowerCase()}.png',
-      //               width: 40,
-      //               height: 40,
-      //             ),
-      //           ),
-      //           Text(displayedCrops[index],  
-      //           style: const TextStyle(
-      //           color: Colors.black, // Set the text color here
-      //           fontSize: 16, // Adjust the font size as needed
-      //           fontWeight: FontWeight.bold, // Set the font weight as needed
-      //         ),
-      //         ),
-      //         ],
-      //       ),
-      //     ),
-      //   ),
-      ],
     );
-  },
-),
-],
-),
-),
-);
-}
+  }
 }

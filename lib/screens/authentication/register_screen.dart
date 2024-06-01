@@ -85,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             SizedBox(height: screenHeight * .12),
             const Row(
                 children: [
-                 const Image(
+                 Image(
                     image: AssetImage('assets/images/app/nthakalogo.png'),
                     width: 50, 
                     height: 50,

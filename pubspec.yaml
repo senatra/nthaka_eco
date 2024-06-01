@@ -11,11 +11,13 @@ dependencies:
   firebase_auth: ^4.16.0
   firebase_core: ^2.24.2
   firebase_storage: ^11.6.0
+  fluentui_icons: ^1.0.0
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1
   gap: ^3.0.1
   get: ^4.6.5
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
