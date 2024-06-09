@@ -3,6 +3,7 @@ import 'package:nthaka_eco/global/widgets/app_styles.dart';
 import 'package:fluentui_icons/fluentui_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:nthaka_eco/screens/home/home_screen.dart';
+import 'package:nthaka_eco/screens/items/item_screen.dart';
 class BottomBar extends StatefulWidget {
   const BottomBar({Key? key}) : super(key: key);
 
@@ -15,7 +16,7 @@ class _BottomBarState extends State<BottomBar> {
 
   static final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
-    // const PlantScreen(),
+    ItemsScreen(),
     // const ProfilePage()
   ];
 
@@ -51,7 +52,7 @@ class _BottomBarState extends State<BottomBar> {
             BottomNavigationBarItem(
               icon: Icon(FluentSystemIcons.ic_fluent_history_regular),
               activeIcon: Icon(FluentSystemIcons.ic_fluent_history_filled),
-              label: "My Community",
+              label: "Items",
             ),
              BottomNavigationBarItem(
               icon: Icon(FluentSystemIcons.ic_fluent_history_regular),

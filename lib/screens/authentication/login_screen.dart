@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:nthaka_eco/components/colors.dart';
 import 'package:nthaka_eco/global/widgets/input_field.dart';
 import 'package:nthaka_eco/global/widgets/form_button.dart';
-import 'package:nthaka_eco/screens/api/authentication.dart';
+import 'package:nthaka_eco/api/authentication.dart';
 import 'package:nthaka_eco/screens/authentication/register_screen.dart';
 import 'package:nthaka_eco/screens/home/home_screen.dart';
 

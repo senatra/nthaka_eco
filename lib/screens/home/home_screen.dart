@@ -1,10 +1,9 @@
 import 'package:fluentui_icons/fluentui_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:nthaka_eco/components/colors.dart';
 import 'package:nthaka_eco/global/widgets/app_layout.dart';
 import 'package:nthaka_eco/global/widgets/app_styles.dart';
-import 'package:nthaka_eco/screens/home/profile_screen.dart';
+import 'package:nthaka_eco/screens/sales/sale.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,28 +14,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String greeting = '';
-  List<String> crops = ['Maize', 'Tomato', 'Cassava', 'Cashew'];
-  List<String> displayedCrops = [];
-
+ 
   @override
   void initState() {
     super.initState();
     greeting = AppLayout.getGreeting();
-    displayedCrops = crops;
-  }
-
-  void _filterCrops(String query) {
-    query = query.toLowerCase();
-    setState(() {
-      displayedCrops = crops.where((crop) => crop.toLowerCase().contains(query)).toList();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      body: Material(
+      body: Container(
+        color: Styles.bgcolor, // Set the background color to grey
         child: ListView(
           children: [
             SizedBox(
@@ -47,26 +36,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Home",
-                      style: Styles.headLineStyle,
+                      "Nthaka.Eco",
+                      style: Styles.headLineStyle2,
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const ProfilePage()),
-                        );
-                      },
-                      child: Container(
-                        height: 50,
-                        width: 50,
+                    Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Image(
                           image: AssetImage('assets/images/app/nthakalogo.png'),
+                          // backgroundColor: Colors.white,
+                          height: 50,
+                          width: 50,
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -127,9 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {},
-                          icon: const Icon(FluentSystemIcons.ic_fluent_leaf_two_filled, color: Colors.black, size: 30.0,),
-                      
-                          label: const Text('Plant Disease Detection', style: TextStyle(fontSize: 18, color: Colors.black,)),
+                          icon: const Icon(
+                            FluentSystemIcons.ic_fluent_leaf_two_filled,
+                            color: Colors.black,
+                            size: 30.0,
+                          ),
+                          label: const Text(
+                            'Plant Disease Detection',
+                            style: TextStyle(fontSize: 18, color: Colors.black),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
@@ -142,103 +131,108 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 15),
-                     Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(
-                  FluentSystemIcons.ic_fluent_book_number_filled,
-                  color: Colors.black,
-                  size: 30.0,
-                ),
-                label: const Text(
-                  'Inventory',
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(
+                            FluentSystemIcons.ic_fluent_book_number_filled,
+                            color: Colors.black,
+                            size: 30.0,
+                          ),
+                          label: const Text(
+                            'Inventory',
+                            style: TextStyle(fontSize: 14, color: Colors.black),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(
+                            FluentSystemIcons.ic_fluent_pen_settings_filled,
+                            color: Colors.black,
+                            size: 30.0,
+                          ),
+                          label: const Text(
+                            'Management',
+                            style: TextStyle(fontSize: 14, color: Colors.black),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
-                ),
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(
-                  FluentSystemIcons.ic_fluent_pen_settings_filled,
-                  color: Colors.black,
-                  size: 30.0,
-                ),
-                label: const Text(
-                  'Management',
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+                  const SizedBox(height: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>  SalesScreen(),
+                            ),
+                          ),
+                          icon: const Icon(
+                            FluentSystemIcons.ic_fluent_bank_filled,
+                            color: Colors.black,
+                            size: 30.0,
+                          ),
+                          label: const Text(
+                            'Sales',
+                            style: TextStyle(fontSize: 14, color: Colors.black),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(
+                            FluentSystemIcons.ic_fluent_location_filled,
+                            color: Colors.black,
+                            size: 30.0,
+                          ),
+                          label: const Text(
+                            'Statistics',
+                            style: TextStyle(fontSize: 14, color: Colors.black),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(
-                  FluentSystemIcons.ic_fluent_bank_filled,
-                  color: Colors.black,
-                  size: 30.0,
-                ),
-                label: const Text(
-                  'Sales & Purchases',
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
-                ),
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(
-                  FluentSystemIcons.ic_fluent_location_filled,
-                  color: Colors.black,
-                  size: 30.0,
-                ),
-                label: const Text(
-                  'Statistics',
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 30.0),
-                ),
-              ),
-            ),
-          ],
-        ),
                 ],
               ),
             ),

@@ -12,11 +12,15 @@ dependencies:
   firebase_core: ^2.24.2
   firebase_storage: ^11.6.0
   fluentui_icons: ^1.0.0
+  fluentui_system_icons: ^1.1.239
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1
   gap: ^3.0.1
   get: ^4.6.5
+  google_fonts: ^6.2.1
+  http: ^1.2.1
+  http_multi_server: ^3.2.1
   shared_preferences: ^2.2.3
 
 dev_dependencies:
@@ -30,3 +34,10 @@ flutter:
   assets:
     - assets/images/onboarding/
     - assets/images/app/
+    - assets/fonts/
+
+  fonts:
+  - family: OpenSans
+    fonts:
+      - asset: assets/fonts/OpenSans.ttf
+      - asset: assets/fonts/OpenSans-Italic.ttf
