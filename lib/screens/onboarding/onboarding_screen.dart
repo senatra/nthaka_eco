@@ -202,6 +202,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
 }
 
 // OnBoarding area widget
+// ignore: must_be_immutable
 class OnBoardContent extends StatelessWidget {
   OnBoardContent({
     super.key,

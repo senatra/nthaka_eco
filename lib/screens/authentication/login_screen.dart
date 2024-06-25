@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (user != null) {
           // ignore: use_build_context_synchronously
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) =>  DashboardScreen()),
           );
         } else {
           // ignore: use_build_context_synchronously
