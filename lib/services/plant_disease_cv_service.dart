@@ -56,7 +56,8 @@ class PlantDiseaseCvService {
     required String crop,
   }) async {
     await ensureReady(crop);
-    final processed = await ImageProcessingService.prepareForInference(sourceImage);
+    final processed =
+        await ImageProcessingService.prepareForInference(sourceImage);
 
     final labels = _labelsByCrop[crop] ?? const ['Unknown'];
     final disease = labels.first;

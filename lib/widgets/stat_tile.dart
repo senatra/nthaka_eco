@@ -10,11 +10,6 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacing16),
         child: Column(

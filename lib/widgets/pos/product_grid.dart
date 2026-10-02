@@ -16,12 +16,35 @@ class ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (products.isEmpty) {
       return Center(
-        child: Text(
-          'No products in this category.\nAdd items under the Items tab.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge,
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacing24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 48,
+                color: theme.colorScheme.outline,
+              ),
+              const SizedBox(height: AppTheme.spacing12),
+              Text(
+                'No products here',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppTheme.spacing4),
+              Text(
+                'Try another category or add items under the Items tab.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -40,14 +63,14 @@ class ProductGrid extends StatelessWidget {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: AppTheme.spacing12,
             crossAxisSpacing: AppTheme.spacing12,
-            childAspectRatio: 0.95,
+            childAspectRatio: 0.92,
           ),
           itemCount: products.length,
           itemBuilder: (context, index) {
             final item = products[index];
-            return Material(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
+            final hasPrice = item.unitPrice > 0;
+
+            return Card(
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: () => onTap(item),
@@ -57,31 +80,74 @@ class ProductGrid extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 36,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.local_florist_outlined,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (item.category != 'General')
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                item.category,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: AppTheme.spacing8),
+                      const SizedBox(height: AppTheme.spacing12),
                       Text(
                         item.itemName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
                       ),
                       const Spacer(),
-                      Text(
-                        item.unitPrice > 0
-                            ? item.unitPrice.toStringAsFixed(2)
-                            : 'Set price',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              hasPrice
+                                  ? AppTheme.formatMoney(item.unitPrice)
+                                  : 'Set price',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: hasPrice
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.tertiary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+                          ),
+                          Icon(
+                            Icons.add_circle,
+                            color: theme.colorScheme.primary.withOpacity(0.85),
+                          ),
+                        ],
                       ),
                     ],
                   ),

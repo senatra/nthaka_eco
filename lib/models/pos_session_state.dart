@@ -15,8 +15,7 @@ class PosSessionState {
     this.discountAmount = 0,
   });
 
-  double get subtotal =>
-      lines.fold(0, (sum, line) => sum + line.lineTotal);
+  double get subtotal => lines.fold(0, (sum, line) => sum + line.lineTotal);
 
   double get total {
     final value = subtotal - discountAmount;

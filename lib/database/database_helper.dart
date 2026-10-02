@@ -18,7 +18,11 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const _dbName = 'nthaka_eco.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 8;
+
+  static const _settingWelcomeCompleted = 'welcome_completed';
+  static const _settingAuthMode = 'auth_mode';
+  static const _settingBusinessName = 'business_name';
 
   Database? _database;
 
@@ -56,6 +60,11 @@ class DatabaseHelper {
         description TEXT,
         unit_price REAL NOT NULL DEFAULT 0,
         category TEXT NOT NULL DEFAULT 'General',
+        sku TEXT,
+        barcode TEXT,
+        is_favorite INTEGER NOT NULL DEFAULT 0,
+        stock_quantity INTEGER NOT NULL DEFAULT 0,
+        low_stock_threshold INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
       )
     ''');
@@ -68,6 +77,11 @@ class DatabaseHelper {
         customer_name TEXT,
         notes TEXT,
         discount_amount REAL NOT NULL DEFAULT 0,
+        payment_method TEXT NOT NULL DEFAULT 'Cash',
+        amount_paid REAL,
+        change_amount REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'completed',
+        correction_note TEXT,
         created_at TEXT NOT NULL
       )
     ''');
@@ -117,6 +131,13 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
+      CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
       CREATE TABLE disease_reports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         crop TEXT NOT NULL,
@@ -126,6 +147,10 @@ class DatabaseHelper {
         bounding_box_json TEXT,
         detected_at TEXT NOT NULL,
         notes TEXT
+        ,severity TEXT
+        ,location TEXT
+        ,follow_up_at TEXT
+        ,follow_up_done INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -155,6 +180,15 @@ class DatabaseHelper {
       'first_name': 'Local',
       'last_name': 'User',
       'updated_at': DateTime.now().toIso8601String(),
+    });
+
+    await db.insert('app_settings', {
+      'key': _settingWelcomeCompleted,
+      'value': 'false',
+    });
+    await db.insert('app_settings', {
+      'key': _settingAuthMode,
+      'value': 'guest',
     });
 
     await db.insert('pos_active_draft', {
@@ -247,15 +281,74 @@ class DatabaseHelper {
         }
         await _createSalesIndexes(db);
         break;
+      case 5:
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )
+        ''');
+        await db.insert(
+            'app_settings',
+            {
+              'key': _settingWelcomeCompleted,
+              'value': 'false',
+            },
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+        await db.insert(
+            'app_settings',
+            {
+              'key': _settingAuthMode,
+              'value': 'guest',
+            },
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+        break;
+      case 6:
+        await db.execute('ALTER TABLE items ADD COLUMN sku TEXT');
+        await db.execute('ALTER TABLE items ADD COLUMN barcode TEXT');
+        await db.execute(
+          'ALTER TABLE items ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0',
+        );
+        await db.execute(
+          "ALTER TABLE sales ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'Cash'",
+        );
+        await db.execute('ALTER TABLE sales ADD COLUMN amount_paid REAL');
+        await db.execute(
+          'ALTER TABLE sales ADD COLUMN change_amount REAL NOT NULL DEFAULT 0',
+        );
+        await db.execute(
+          "ALTER TABLE sales ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'",
+        );
+        await db.execute('ALTER TABLE sales ADD COLUMN correction_note TEXT');
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_items_barcode ON items(barcode)',
+        );
+        break;
+      case 7:
+        await db
+            .execute('ALTER TABLE disease_reports ADD COLUMN severity TEXT');
+        await db
+            .execute('ALTER TABLE disease_reports ADD COLUMN location TEXT');
+        await db.execute(
+            'ALTER TABLE disease_reports ADD COLUMN follow_up_at TEXT');
+        await db.execute(
+            'ALTER TABLE disease_reports ADD COLUMN follow_up_done INTEGER NOT NULL DEFAULT 0');
+        break;
+      case 8:
+        await db.execute(
+            'ALTER TABLE items ADD COLUMN stock_quantity INTEGER NOT NULL DEFAULT 0');
+        await db.execute(
+            'ALTER TABLE items ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 0');
+        break;
       default:
         break;
     }
   }
 
   Future<void> _seedReferenceData(Database db) async {
-    final cropCount =
-        Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM crops')) ??
-            0;
+    final cropCount = Sqflite.firstIntValue(
+            await db.rawQuery('SELECT COUNT(*) FROM crops')) ??
+        0;
     if (cropCount > 0) {
       return;
     }
@@ -287,6 +380,73 @@ class DatabaseHelper {
     }
   }
 
+  Future<bool> isWelcomeCompleted() async {
+    final db = await database;
+    final rows = await db.query(
+      'app_settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [_settingWelcomeCompleted],
+      limit: 1,
+    );
+    return rows.firstOrNull?['value'] == 'true';
+  }
+
+  Future<void> continueAsGuest() async {
+    final db = await database;
+    final batch = db.batch();
+    batch.insert(
+        'app_settings',
+        {
+          'key': _settingWelcomeCompleted,
+          'value': 'true',
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    batch.insert(
+        'app_settings',
+        {
+          'key': _settingAuthMode,
+          'value': 'guest',
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    await batch.commit(noResult: true);
+  }
+
+  Future<String> getBusinessName() async {
+    final db = await database;
+    final rows = await db.query(
+      'app_settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [_settingBusinessName],
+      limit: 1,
+    );
+    final value = rows.firstOrNull?['value'] as String?;
+    return value == null || value.trim().isEmpty ? 'Nthaka.Eco' : value;
+  }
+
+  Future<void> updateBusinessName(String name) async {
+    final db = await database;
+    await db.insert(
+      'app_settings',
+      {'key': _settingBusinessName, 'value': name.trim()},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<String> getSetting(String key, {required String fallback}) async {
+    final db = await database;
+    final rows = await db.query('app_settings',
+        columns: ['value'], where: 'key = ?', whereArgs: [key], limit: 1);
+    return rows.isEmpty ? fallback : rows.first['value'] as String;
+  }
+
+  Future<void> updateSetting(String key, String value) async {
+    final db = await database;
+    await db.insert('app_settings', {'key': key, 'value': value},
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<List<Item>> getItems() async {
     final page = await getItemsPaged(limit: 50, offset: 0);
     return page.items;
@@ -297,9 +457,9 @@ class DatabaseHelper {
     required int offset,
   }) async {
     final db = await database;
-    final total =
-        Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM items')) ??
-            0;
+    final total = Sqflite.firstIntValue(
+            await db.rawQuery('SELECT COUNT(*) FROM items')) ??
+        0;
     final rows = await db.query(
       'items',
       orderBy: 'created_at DESC',
@@ -335,6 +495,11 @@ class DatabaseHelper {
       'description': item.description,
       'unit_price': item.unitPrice,
       'category': item.category,
+      'sku': item.sku,
+      'barcode': item.barcode,
+      'is_favorite': item.isFavorite ? 1 : 0,
+      'stock_quantity': item.stockQuantity,
+      'low_stock_threshold': item.lowStockThreshold,
       'created_at': DateTime.now().toIso8601String(),
     });
     final created = await getItem(id);
@@ -350,6 +515,11 @@ class DatabaseHelper {
         'description': item.description,
         'unit_price': item.unitPrice,
         'category': item.category,
+        'sku': item.sku,
+        'barcode': item.barcode,
+        'is_favorite': item.isFavorite ? 1 : 0,
+        'stock_quantity': item.stockQuantity,
+        'low_stock_threshold': item.lowStockThreshold,
       },
       where: 'id = ?',
       whereArgs: [item.itemId],
@@ -384,8 +554,8 @@ class DatabaseHelper {
     final args = <Object?>[];
 
     if (trimmed.isNotEmpty) {
-      whereParts.add('item_name LIKE ?');
-      args.add('%$trimmed%');
+      whereParts.add('(item_name LIKE ? OR sku LIKE ? OR barcode LIKE ?)');
+      args.addAll(['%$trimmed%', '%$trimmed%', '%$trimmed%']);
     }
     if (category != null && category.isNotEmpty && category != 'All') {
       whereParts.add('category = ?');
@@ -396,7 +566,7 @@ class DatabaseHelper {
       'items',
       where: whereParts.isEmpty ? null : whereParts.join(' AND '),
       whereArgs: args.isEmpty ? null : args,
-      orderBy: 'item_name ASC',
+      orderBy: 'is_favorite DESC, item_name ASC',
       limit: limit,
     );
     return rows.map(Item.fromMap).toList();
@@ -417,9 +587,9 @@ class DatabaseHelper {
     required int offset,
   }) async {
     final db = await database;
-    final total =
-        Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM sales')) ??
-            0;
+    final total = Sqflite.firstIntValue(
+            await db.rawQuery('SELECT COUNT(*) FROM sales')) ??
+        0;
     final saleRows = await db.query(
       'sales',
       orderBy: 'date DESC, created_at DESC',
@@ -453,8 +623,35 @@ class DatabaseHelper {
 
   Future<double> getTotalSalesAmount() async {
     final db = await database;
-    final row = await db.rawQuery('SELECT SUM(total_amount) AS total FROM sales');
+    final row = await db.rawQuery(
+      "SELECT SUM(total_amount) AS total FROM sales WHERE status != 'refunded'",
+    );
     return (row.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  Future<({double cashExpected, double totalSales, int saleCount})> getCashUp(
+    DateTime day,
+  ) async {
+    final db = await database;
+    final start = DateTime(day.year, day.month, day.day).toIso8601String();
+    final end = DateTime(day.year, day.month, day.day + 1).toIso8601String();
+    final rows = await db.rawQuery(
+      '''
+      SELECT
+        COALESCE(SUM(CASE WHEN payment_method = 'Cash' THEN total_amount ELSE 0 END), 0) AS cash_expected,
+        COALESCE(SUM(total_amount), 0) AS total_sales,
+        COUNT(*) AS sale_count
+      FROM sales
+      WHERE date >= ? AND date < ? AND status != 'refunded'
+      ''',
+      [start, end],
+    );
+    final row = rows.first;
+    return (
+      cashExpected: (row['cash_expected'] as num?)?.toDouble() ?? 0,
+      totalSales: (row['total_sales'] as num?)?.toDouble() ?? 0,
+      saleCount: (row['sale_count'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<Sale?> getSale(int id) async {
@@ -489,6 +686,11 @@ class DatabaseHelper {
         'customer_name': sale.customerName,
         'notes': sale.notes,
         'discount_amount': sale.discountAmount,
+        'payment_method': sale.paymentMethod,
+        'amount_paid': sale.amountPaid,
+        'change_amount': sale.changeAmount,
+        'status': sale.status,
+        'correction_note': sale.correctionNote,
         'created_at': DateTime.now().toIso8601String(),
       });
 
@@ -500,6 +702,14 @@ class DatabaseHelper {
           'quantity': item.quantity,
           'price': item.price,
         });
+      }
+
+      for (final item in sale.items) {
+        if (item.catalogItemId != null) {
+          await txn.rawUpdate(
+              'UPDATE items SET stock_quantity = MAX(0, stock_quantity - ?) WHERE id = ?',
+              [item.quantity, item.catalogItemId]);
+        }
       }
 
       final createdRows = await txn.query(
@@ -531,6 +741,11 @@ class DatabaseHelper {
           'customer_name': sale.customerName,
           'notes': sale.notes,
           'discount_amount': sale.discountAmount,
+          'payment_method': sale.paymentMethod,
+          'amount_paid': sale.amountPaid,
+          'change_amount': sale.changeAmount,
+          'status': sale.status,
+          'correction_note': sale.correctionNote,
         },
         where: 'id = ?',
         whereArgs: [sale.id],
@@ -559,6 +774,29 @@ class DatabaseHelper {
     await db.delete('sales', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> refundSale(int id, {String? note}) async {
+    final db = await database;
+    final sale = await getSale(id);
+    if (sale == null || sale.status == 'refunded') return;
+
+    await db.transaction((txn) async {
+      await txn.update(
+        'sales',
+        {'status': 'refunded', 'correction_note': note},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      for (final item in sale.items) {
+        if (item.catalogItemId != null) {
+          await txn.rawUpdate(
+            'UPDATE items SET stock_quantity = stock_quantity + ? WHERE id = ?',
+            [item.quantity, item.catalogItemId],
+          );
+        }
+      }
+    });
+  }
+
   Future<DeviceProfile> getDeviceProfile() async {
     final db = await database;
     final rows = await db.query('device_profile', where: 'id = 1', limit: 1);
@@ -580,6 +818,31 @@ class DatabaseHelper {
   Future<List<DiseaseReport>> getDiseaseReports() async {
     final page = await getDiseaseReportsPaged(limit: 50, offset: 0);
     return page.items;
+  }
+
+  Future<List<DiseaseReport>> getDueFollowUps() async {
+    final db = await database;
+    final rows = await db.query('disease_reports',
+        where:
+            'follow_up_at IS NOT NULL AND follow_up_done = 0 AND follow_up_at <= ?',
+        whereArgs: [DateTime.now().toIso8601String()],
+        orderBy: 'follow_up_at ASC');
+    return rows.map(DiseaseReport.fromMap).toList();
+  }
+
+  Future<void> markFollowUpDone(int id) async {
+    final db = await database;
+    await db.update('disease_reports', {'follow_up_done': 1},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Item>> getLowStockItems() async {
+    final db = await database;
+    final rows = await db.query('items',
+        where:
+            'low_stock_threshold > 0 AND stock_quantity <= low_stock_threshold',
+        orderBy: 'stock_quantity ASC');
+    return rows.map(Item.fromMap).toList();
   }
 
   Future<PagedResult<DiseaseReport>> getDiseaseReportsPaged({
@@ -645,6 +908,10 @@ class DatabaseHelper {
       'bounding_box_json': report.boundingBoxJson,
       'detected_at': report.detectedAt.toIso8601String(),
       'notes': report.notes,
+      'severity': report.severity,
+      'location': report.location,
+      'follow_up_at': report.followUpAt?.toIso8601String(),
+      'follow_up_done': report.followUpDone ? 1 : 0,
     });
 
     final rows = await db.query(
@@ -750,7 +1017,7 @@ class DatabaseHelper {
         COALESCE(SUM(total_amount), 0) AS revenue,
         COUNT(*) AS sale_count
       FROM sales
-      WHERE date >= ? AND date < ?
+      WHERE date >= ? AND date < ? AND status != 'refunded'
       ''',
       [startIso, endIso],
     );
@@ -763,7 +1030,7 @@ class DatabaseHelper {
       '''
       SELECT substr(date, 1, 10) AS day_key, COALESCE(SUM(total_amount), 0) AS total
       FROM sales
-      WHERE date >= ? AND date < ?
+      WHERE date >= ? AND date < ? AND status != 'refunded'
       GROUP BY day_key
       ORDER BY day_key ASC
       ''',
@@ -778,7 +1045,7 @@ class DatabaseHelper {
         COALESCE(SUM(si.quantity * si.price), 0) AS revenue
       FROM sale_items si
       INNER JOIN sales s ON s.id = si.sale_id
-      WHERE s.date >= ? AND s.date < ?
+      WHERE s.date >= ? AND s.date < ? AND s.status != 'refunded'
       GROUP BY si.item_name
       ORDER BY qty DESC, revenue DESC
       LIMIT 10
@@ -839,11 +1106,10 @@ class DatabaseHelper {
 
   Future<DiseaseAnalytics> getDiseaseAnalytics() async {
     final db = await database;
-    final totalReports =
-        Sqflite.firstIntValue(
-              await db.rawQuery('SELECT COUNT(*) FROM disease_reports'),
-            ) ??
-            0;
+    final totalReports = Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM disease_reports'),
+        ) ??
+        0;
 
     if (totalReports == 0) {
       return DiseaseAnalytics(

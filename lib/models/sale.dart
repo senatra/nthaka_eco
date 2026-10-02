@@ -5,6 +5,11 @@ class Sale {
   final String? customerName;
   final String? notes;
   final double discountAmount;
+  final String paymentMethod;
+  final double? amountPaid;
+  final double changeAmount;
+  final String status;
+  final String? correctionNote;
   final List<SaleItem> items;
 
   Sale({
@@ -14,6 +19,11 @@ class Sale {
     this.customerName,
     this.notes,
     this.discountAmount = 0,
+    this.paymentMethod = 'Cash',
+    this.amountPaid,
+    this.changeAmount = 0,
+    this.status = 'completed',
+    this.correctionNote,
     required this.items,
   });
 
@@ -25,6 +35,11 @@ class Sale {
       customerName: map['customer_name'] as String?,
       notes: map['notes'] as String?,
       discountAmount: (map['discount_amount'] as num?)?.toDouble() ?? 0,
+      paymentMethod: map['payment_method'] as String? ?? 'Cash',
+      amountPaid: (map['amount_paid'] as num?)?.toDouble(),
+      changeAmount: (map['change_amount'] as num?)?.toDouble() ?? 0,
+      status: map['status'] as String? ?? 'completed',
+      correctionNote: map['correction_note'] as String?,
       items: items ?? [],
     );
   }
@@ -37,6 +52,11 @@ class Sale {
       'customer_name': customerName,
       'notes': notes,
       'discount_amount': discountAmount,
+      'payment_method': paymentMethod,
+      'amount_paid': amountPaid,
+      'change_amount': changeAmount,
+      'status': status,
+      'correction_note': correctionNote,
     };
   }
 }

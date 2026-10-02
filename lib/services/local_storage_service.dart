@@ -19,8 +19,8 @@ class LocalStorageService {
 
   static Future<String> saveImageFile(File source, {String? fileName}) async {
     final imagesDir = await getImagesDirectory();
-    final targetName =
-        fileName ?? '${DateTime.now().millisecondsSinceEpoch}${p.extension(source.path)}';
+    final targetName = fileName ??
+        '${DateTime.now().millisecondsSinceEpoch}${p.extension(source.path)}';
     final targetPath = p.join(imagesDir.path, targetName);
     await source.copy(targetPath);
     return targetPath;

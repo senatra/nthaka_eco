@@ -37,8 +37,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen> {
         return (start, start.add(const Duration(days: 1)));
       case _ReportRange.week:
         final weekStart = now.subtract(Duration(days: now.weekday - 1));
-        final start =
-            DateTime(weekStart.year, weekStart.month, weekStart.day);
+        final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
         return (start, start.add(const Duration(days: 7)));
       case _ReportRange.month:
         final start = DateTime(now.year, now.month, 1);
@@ -133,7 +132,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen> {
               padding: const EdgeInsets.all(AppTheme.spacing16),
               children: [
                 SegmentedButton<_ReportRange>(
-                  segments: [
+                  segments: const [
                     ButtonSegment(
                       value: _ReportRange.today,
                       label: Text('Today'),

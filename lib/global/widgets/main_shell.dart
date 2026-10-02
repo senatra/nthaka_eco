@@ -3,6 +3,7 @@ import 'package:nthaka_eco/screens/home/home_screen.dart';
 import 'package:nthaka_eco/screens/home/profile_screen.dart';
 import 'package:nthaka_eco/screens/items/item_screen.dart';
 import 'package:nthaka_eco/screens/pdd/plant_scan_screen.dart';
+import 'package:nthaka_eco/screens/sales/sales_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -17,6 +18,7 @@ class _MainShellState extends State<MainShell> {
   final _pages = const [
     DashboardScreen(),
     ItemsScreen(),
+    SalesScreen(),
     PlantScanScreen(),
     ProfilePage(),
   ];
@@ -38,6 +40,11 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.inventory_2_outlined),
             selectedIcon: Icon(Icons.inventory_2),
             label: 'Items',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.point_of_sale_outlined),
+            selectedIcon: Icon(Icons.point_of_sale),
+            label: 'Sales',
           ),
           NavigationDestination(
             icon: Icon(Icons.eco_outlined),
