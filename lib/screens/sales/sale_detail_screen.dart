@@ -3,88 +3,138 @@ import 'package:nthaka_eco/app/app_theme.dart';
 import 'package:nthaka_eco/database/database_helper.dart';
 import 'package:nthaka_eco/models/sale.dart';
 import 'package:nthaka_eco/services/report_export_service.dart';
-
+ 
+class _CorrectionResult {
+  final String paymentMethod;
+  final String? notes;
+  final String reason;
+  const _CorrectionResult(this.paymentMethod, this.notes, this.reason);
+}
+ 
+class _CorrectionSheet extends StatefulWidget {
+  final Sale sale;
+  const _CorrectionSheet({required this.sale});
+ 
+  @override
+  State<_CorrectionSheet> createState() => _CorrectionSheetState();
+}
+ 
+class _CorrectionSheetState extends State<_CorrectionSheet> {
+  late final TextEditingController _notesController;
+  late final TextEditingController _reasonController;
+  late String _paymentMethod;
+ 
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController(text: widget.sale.notes ?? '');
+    _reasonController = TextEditingController();
+    _paymentMethod = widget.sale.paymentMethod;
+  }
+ 
+  @override
+  void dispose() {
+    _notesController.dispose();
+    _reasonController.dispose();
+    super.dispose();
+  }
+ 
+  void _submit() {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a correction reason')),
+      );
+      return;
+    }
+    final notes = _notesController.text.trim();
+    Navigator.pop(
+      context,
+      _CorrectionResult(_paymentMethod, notes.isEmpty ? null : notes, reason),
+    );
+  }
+ 
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        AppTheme.spacing16,
+        AppTheme.spacing8,
+        AppTheme.spacing16,
+        MediaQuery.viewInsetsOf(context).bottom + AppTheme.spacing16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Correct sale details',
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppTheme.spacing12),
+          DropdownButtonFormField<String>(
+            value: _paymentMethod,
+            decoration: const InputDecoration(labelText: 'Payment method'),
+            items: const ['Cash', 'Mobile money', 'Card']
+                .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                .toList(),
+            onChanged: (v) => setState(() => _paymentMethod = v!),
+          ),
+          const SizedBox(height: AppTheme.spacing12),
+          TextField(
+            controller: _notesController,
+            maxLines: 2,
+            decoration: const InputDecoration(labelText: 'Sale notes'),
+          ),
+          const SizedBox(height: AppTheme.spacing12),
+          TextField(
+            controller: _reasonController,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Correction reason',
+              helperText: 'Saved with this receipt for accountability.',
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacing16),
+          FilledButton(
+            onPressed: _submit,
+            child: const Text('Save correction'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+ 
 class SaleDetailScreen extends StatelessWidget {
   final int saleId;
-
+ 
   const SaleDetailScreen({super.key, required this.saleId});
-
+ 
   Future<void> _correctSale(BuildContext context, Sale sale) async {
-    final notesController = TextEditingController(text: sale.notes ?? '');
-    final reasonController = TextEditingController();
-    var paymentMethod = sale.paymentMethod;
-    final saved = await showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<_CorrectionResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-              AppTheme.spacing16,
-              AppTheme.spacing8,
-              AppTheme.spacing16,
-              MediaQuery.viewInsetsOf(context).bottom + AppTheme.spacing16),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Correct sale details',
-                    style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: AppTheme.spacing12),
-                DropdownButtonFormField<String>(
-                    value: paymentMethod,
-                    decoration:
-                        const InputDecoration(labelText: 'Payment method'),
-                    items: const ['Cash', 'Mobile money', 'Card']
-                        .map((value) =>
-                            DropdownMenuItem(value: value, child: Text(value)))
-                        .toList(),
-                    onChanged: (value) =>
-                        setSheetState(() => paymentMethod = value!)),
-                const SizedBox(height: AppTheme.spacing12),
-                TextField(
-                    controller: notesController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Sale notes')),
-                const SizedBox(height: AppTheme.spacing12),
-                TextField(
-                    controller: reasonController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                        labelText: 'Correction reason',
-                        helperText:
-                            'Saved with this receipt for accountability.')),
-                const SizedBox(height: AppTheme.spacing16),
-                FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Save correction')),
-              ]),
-        ),
-      ),
+      builder: (_) => _CorrectionSheet(sale: sale),
     );
-    if (saved == true && reasonController.text.trim().isNotEmpty) {
-      await DatabaseHelper.instance.updateSale(Sale(
-        id: sale.id,
-        date: sale.date,
-        totalAmount: sale.totalAmount,
-        customerName: sale.customerName,
-        notes: notesController.text.trim().isEmpty
-            ? null
-            : notesController.text.trim(),
-        discountAmount: sale.discountAmount,
-        paymentMethod: paymentMethod,
-        amountPaid: sale.amountPaid,
-        changeAmount: sale.changeAmount,
-        status: sale.status,
-        correctionNote: reasonController.text.trim(),
-        items: sale.items,
-      ));
-      if (context.mounted) Navigator.pop(context, true);
-    }
-    notesController.dispose();
-    reasonController.dispose();
+    if (result == null) return;
+ 
+    await DatabaseHelper.instance.updateSale(Sale(
+      id: sale.id,
+      date: sale.date,
+      totalAmount: sale.totalAmount,
+      customerName: sale.customerName,
+      notes: result.notes,
+      discountAmount: sale.discountAmount,
+      paymentMethod: result.paymentMethod,
+      amountPaid: sale.amountPaid,
+      changeAmount: sale.changeAmount,
+      status: sale.status,
+      correctionNote: result.reason,
+      items: sale.items,
+    ));
+    if (context.mounted) Navigator.pop(context, true);
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,12 +206,12 @@ class SaleDetailScreen extends StatelessWidget {
           if (sale == null) {
             return const Center(child: Text('Sale not found'));
           }
-
+ 
           final subtotal = sale.items.fold<double>(
             0,
             (sum, line) => sum + line.quantity * line.price,
           );
-
+ 
           return ListView(
             padding: const EdgeInsets.all(AppTheme.spacing16),
             children: [

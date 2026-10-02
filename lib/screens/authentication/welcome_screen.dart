@@ -37,7 +37,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppTheme.spacing12),
               Text(
-                'Run sales, manage items, and scan crops — on this device.',
+                'Run sales, manage items, and scan crops on this device.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: scheme.onSurfaceVariant,
