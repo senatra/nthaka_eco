@@ -1,253 +1,142 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gap/gap.dart';
-import 'package:nthaka_eco/main.dart';
+import 'package:nthaka_eco/app/app_theme.dart';
+import 'package:nthaka_eco/database/database_helper.dart';
+import 'package:nthaka_eco/models/device_profile.dart';
+import 'package:nthaka_eco/models/disease_report.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  late Future<DocumentSnapshot<Map<String, dynamic>>> _userData;
-  late Future<Map<String, dynamic>> _userDiseaseData;
+  late Future<DeviceProfile> _profileFuture;
+  late Future<DiseaseAnalytics> _analyticsFuture;
 
   @override
   void initState() {
     super.initState();
-    _userData = _getCurrentUser();
-    _userDiseaseData = _getDiseaseData();
+    _reload();
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> _getCurrentUser() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      return FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-    }
-    throw 'User Data not found';
-  }
-  Future<Map<String, dynamic>> _getDiseaseData() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      QuerySnapshot<Map<String, dynamic>> querySnapshot =
-          await FirebaseFirestore.instance
-              .collection('disease_reports')
-              .where('userId', isEqualTo: user.uid)
-              .get();
-
-      int totalReports = querySnapshot.size;
-      // double totalConfidence = 0.0;
-
-      Map<String, int> diseaseCount = {};
-
-      querySnapshot.docs.forEach((doc) {
-        // totalConfidence += doc['confidence'] ?? 0.0;
-
-        // Count occurrences of each disease
-        String diseaseName = doc['disease'];
-        if (diseaseCount.containsKey(diseaseName)) {
-          diseaseCount[diseaseName] = diseaseCount[diseaseName]! + 1;
-        } else {
-          diseaseCount[diseaseName] = 1;
-        }
-      });
-
-      // double averageConfidence = totalReports > 0
-      //     ? totalConfidence / totalReports
-      //     : 0.0;
-
-      // Find the most common disease
-      String mostCommonDisease = '';
-      String mostCommonPlant = '';
-      int maxOccurrences = 0;
-
-      diseaseCount.forEach((disease, count) {
-        if (count > maxOccurrences) {
-          maxOccurrences = count;
-          mostCommonDisease = disease;
-        }
-      });
-       diseaseCount.forEach((plant, count) {
-        if (count > maxOccurrences) {
-          mostCommonPlant = plant;
-        }
-      });
-
-      return {
-        'totalReports': totalReports,
-        // 'averageConfidence': averageConfidence,
-        'mostCommonDisease': mostCommonDisease,
-        'mostCommonPlant': mostCommonPlant,
-      };
-    }
-    throw 'User not found';
+  void _reload() {
+    _profileFuture = DatabaseHelper.instance.getDeviceProfile();
+    _analyticsFuture = DatabaseHelper.instance.getDiseaseAnalytics();
   }
 
-  Future<void> _signOut() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MyApp()),
+  Future<void> _editProfile(DeviceProfile profile) async {
+    final firstNameController = TextEditingController(text: profile.firstName);
+    final lastNameController = TextEditingController(text: profile.lastName);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Device profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: firstNameController,
+              decoration: const InputDecoration(labelText: 'First name'),
+            ),
+            TextField(
+              controller: lastNameController,
+              decoration: const InputDecoration(labelText: 'Last name'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true) {
+      await DatabaseHelper.instance.updateDeviceProfile(
+        DeviceProfile(
+          firstName: firstNameController.text.trim(),
+          lastName: lastNameController.text.trim(),
+          updatedAt: DateTime.now(),
+        ),
       );
-    } catch (e) {
-      print('Error signing out: $e');
+      setState(_reload);
     }
+
+    firstNameController.dispose();
+    lastNameController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-  
-      body:
-      
-       Column(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              final profile = await _profileFuture;
+              if (mounted) {
+                await _editProfile(profile);
+              }
+            },
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(AppTheme.spacing16),
         children: [
-                const Gap(25),
-
-                Padding(
-                  padding: const EdgeInsets.all(25.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'My Profile',
-                            // style: Styles.headLineStyle3,
-                          ),
-                          const Gap(5),
-                          Text(
-                            "Nthaka",
-                            // style: Styles.headLineStyle,
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 50,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: FloatingActionButton(
-                            onPressed: _signOut,
-                            backgroundColor: Colors.red,
-                          child: const Icon(Icons.logout),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-         FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          future: _userData,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
-            } else if (snapshot.hasError) {
-              return const Text('Error: Check Internet Connection');
-            } else if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const Text('User data not available');
-            } else {
-              
-              Map<String, dynamic> userData = snapshot.data!.data()!;
-              String firstName = userData['firstName'] ?? '';
-              String lastName = userData['lastName'] ?? '';
-              String email = FirebaseAuth.instance.currentUser?.email ?? '';
+          FutureBuilder<DeviceProfile>(
+            future: _profileFuture,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const LinearProgressIndicator();
+              }
+              final profile = snapshot.data!;
+              return ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.person)),
+                title: Text(profile.displayName),
+                subtitle: const Text('Stored on this device only'),
+              );
+            },
+          ),
+          const SizedBox(height: AppTheme.spacing16),
+          Text('Scan insights', style: Theme.of(context).textTheme.titleMedium),
+          FutureBuilder<DiseaseAnalytics>(
+            future: _analyticsFuture,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox.shrink();
+              }
+              final analytics = snapshot.data!;
               return Column(
-                
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset(
-                  'assets/images/logo.png',
-                  width: 120,
-                  height: 200,
+                  ListTile(
+                    title: const Text('Total reports'),
+                    trailing: Text('${analytics.totalReports}'),
                   ),
-                  const SizedBox(height: 20),
-                  Text('$firstName $lastName', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  Text('Email: $email'),
-            
+                  ListTile(
+                    title: const Text('Most common disease'),
+                    trailing: Text(analytics.mostCommonDisease),
+                  ),
+                  ListTile(
+                    title: const Text('Most common crop'),
+                    trailing: Text(analytics.mostCommonCrop),
+                  ),
                 ],
               );
-            }
-          },
-        ),
-          const SizedBox(height: 20),
-FutureBuilder<Map<String, dynamic>>(
-  future: _userDiseaseData,
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Text('Please Wait...'); // Placeholder while fetching data
-    } else if (snapshot.hasError) {
-      return const Text('Error: Check Internet Connection');
-    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-      return const Text('No data available'); // Handle case when no data is returned
-    } else {
-      Map<String, dynamic> analyticsData = snapshot.data!;
-
-      // Function to build Total Reports Card
-      Card buildTotalReportsCard(int totalReports) {
-        return Card(
-          margin: const EdgeInsets.all(10.0),
-          elevation: 4.0,
-          child: ListTile(
-            title: const Text(
-              'Total:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              '$totalReports',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
-            ),
+            },
           ),
-        );
-      }
-
-      // Function to build Most Common Disease Card
-      Card buildMostCommonDiseaseCard(String mostCommonDisease) {
-        return Card(
-          margin: const EdgeInsets.all(10.0),
-          elevation: 4.0,
-          child: ListTile(
-            title: const Text(
-              'Most Common:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              '$mostCommonDisease',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
-            ),
-          ),
-        );
-      }
-
-      // Create cards using the retrieved data
-      Card totalReportsCard = buildTotalReportsCard(analyticsData['totalReports']);
-      Card mostCommonDiseaseCard = buildMostCommonDiseaseCard(analyticsData['mostCommonDisease']);
-
-      // Return a widget that uses these cards in your UI layout
-      return Column(
-        children: [
-          totalReportsCard,
-          mostCommonDiseaseCard,
-          // Add more cards or widgets as needed
         ],
-      );
-    }
-  },
-),
-
-        ],
-
       ),
     );
   }

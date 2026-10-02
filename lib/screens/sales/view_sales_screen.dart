@@ -1,211 +1,217 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
-import 'package:nthaka_eco/global/widgets/app_styles.dart';
+import 'package:nthaka_eco/app/app_theme.dart';
+import 'package:nthaka_eco/database/database_helper.dart';
+import 'package:nthaka_eco/models/sale.dart';
+import 'package:nthaka_eco/screens/sales/pos_screen.dart';
+import 'package:nthaka_eco/screens/sales/sale_detail_screen.dart';
+import 'package:nthaka_eco/screens/sales/sales_reports_screen.dart';
 
 class ViewSalesScreen extends StatefulWidget {
-  const ViewSalesScreen({Key? key}) : super(key: key);
+  const ViewSalesScreen({super.key});
 
   @override
-  _ViewSalesScreenState createState() => _ViewSalesScreenState();
+  State<ViewSalesScreen> createState() => _ViewSalesScreenState();
 }
 
 class _ViewSalesScreenState extends State<ViewSalesScreen> {
-  String searchQuery = '';
-  String selectedDateFilter = 'All';
-  String selectedSalesperson = 'All';
+  static const _pageSize = 25;
+
+  final _scrollController = ScrollController();
+  String _searchQuery = '';
+  String _dateFilter = 'All';
+
+  final List<Sale> _sales = [];
+  int _offset = 0;
+  bool _hasMore = true;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPage(reset: true);
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_hasMore || _loading) {
+      return;
+    }
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadPage();
+    }
+  }
+
+  bool _matchesDateFilter(DateTime date) {
+    final now = DateTime.now();
+    switch (_dateFilter) {
+      case 'Today':
+        return date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
+      case 'This Week':
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        return !date.isBefore(
+          DateTime(weekStart.year, weekStart.month, weekStart.day),
+        );
+      case 'This Month':
+        return date.year == now.year && date.month == now.month;
+      default:
+        return true;
+    }
+  }
+
+  bool _matchesSearch(Sale sale) {
+    if (_searchQuery.isEmpty) {
+      return true;
+    }
+    final q = _searchQuery.toLowerCase();
+    return sale.items.any(
+      (item) => item.itemName.toLowerCase().contains(q),
+    );
+  }
+
+  Future<void> _loadPage({bool reset = false}) async {
+    if (_loading) {
+      return;
+    }
+    setState(() => _loading = true);
+
+    if (reset) {
+      _offset = 0;
+      _sales.clear();
+      _hasMore = true;
+    }
+
+    final page = await DatabaseHelper.instance.getSalesPaged(
+      limit: _pageSize,
+      offset: _offset,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _sales.addAll(page.items);
+      _offset += page.items.length;
+      _hasMore = page.hasMore;
+      _loading = false;
+    });
+  }
+
+  Future<void> _openPos() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const PosScreen()),
+    );
+    if (saved == true) {
+      await _loadPage(reset: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Styles.bgcolor,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Sales',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/app/nthakalogo.png'),
-                    fit: BoxFit.cover,
-                  ),
+    final visibleSales = _sales
+        .where((sale) => _matchesSearch(sale) && _matchesDateFilter(sale.date))
+        .toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sales'),
+        actions: [
+          IconButton(
+            tooltip: 'Reports',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SalesReportsScreen(),
                 ),
-                width: 40,
-                height: 40,
-              ),
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(15.0),
+              );
+            },
+            icon: const Icon(Icons.insights_outlined),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openPos,
+        icon: const Icon(Icons.point_of_sale),
+        label: const Text('New sale'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppTheme.spacing16),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0)),
-                        ),
-                        child: const Text(
-                          'New Sales >',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-      
-                const SizedBox(height: 20.0),
                 TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Search',
+                  decoration: const InputDecoration(
+                    labelText: 'Search receipts',
                     prefixIcon: Icon(Icons.search),
-                    // Remove the border property entirely
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value;
-                    });
-                  },
+                  onChanged: (value) => setState(() => _searchQuery = value),
                 ),
-
-                const SizedBox(height: 20.0),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    DropdownButton<String>(
-                      value: selectedDateFilter,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedDateFilter = value!;
-                        });
-                      },
-                      items: <String>['All', 'Today', 'This Week', 'This Month']
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                    DropdownButton<String>(
-                      value: selectedSalesperson,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedSalesperson = value!;
-                        });
-                      },
-                      items: <String>['All', 'Isaac Manganda', 'John Doe', 'Jane Smith']
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
+                const SizedBox(height: AppTheme.spacing8),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'All', label: Text('All')),
+                    ButtonSegment(value: 'Today', label: Text('Today')),
+                    ButtonSegment(value: 'This Week', label: Text('Week')),
+                    ButtonSegment(value: 'This Month', label: Text('Month')),
                   ],
-                ),
-                const SizedBox(height: 20.0),
-                OverviewCard(
-                  title: 'Sale tit',
-                  details: const {
-                    'Sale By': 'Isaac Manganda',
-                    'Qty.': '10',
-                    'Total Amount': '2000',
-                    'Sale Date': '02 May 2024',
+                  selected: {_dateFilter},
+                  onSelectionChanged: (value) {
+                    setState(() => _dateFilter = value.first);
                   },
-                  onViewDetails: () {},
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class OverviewCard extends StatelessWidget {
-  final String title;
-  final Map<String, String> details;
-  final VoidCallback onViewDetails;
-
-  const OverviewCard({Key? key, required this.title, required this.details, required this.onViewDetails}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 4.0,
-            spreadRadius: 0.0,
-          )
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: details.entries.map((entry) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${entry.key}: ',
-                      style: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold),
-                    ),
-                    Flexible(
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 5.0),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 1.0),
-              child: TextButton(
-                onPressed: onViewDetails,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  alignment: Alignment.bottomRight,
-                ),
-                child: Text(
-                  'View Details >',
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
+          Expanded(
+            child: visibleSales.isEmpty && !_loading
+                ? const Center(child: Text('No sales yet. Tap New sale to start.'))
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount: visibleSales.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= visibleSales.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(AppTheme.spacing16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final sale = visibleSales[index];
+                      final qty = sale.items.fold<int>(
+                        0,
+                        (sum, item) => sum + item.quantity,
+                      );
+                      return ListTile(
+                        title: Text('Receipt #${sale.id}'),
+                        subtitle: Text(
+                          '${sale.date.toLocal().toString().split(' ').first} · $qty items',
+                        ),
+                        trailing: Text(sale.totalAmount.toStringAsFixed(2)),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SaleDetailScreen(saleId: sale.id),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
-                  textAlign: TextAlign.right,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

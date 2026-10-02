@@ -1,32 +1,11 @@
-import 'package:flutter/cupertino.dart';
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 
 class AppLayout {
-  static getSize(BuildContext context) {
-    return MediaQuery.of(context).size;
+  static double height(BuildContext context) {
+    return MediaQuery.sizeOf(context).height;
   }
 
-  static getScreenHeight() {
-    return Get.height;
-  }
-
-  static getScreenWidth() {
-    return Get.width;
-  }
-
-  static getHeight(double pixels) {
-    double x = getScreenHeight() / pixels;
-    return getScreenHeight() / x;
-  }
-
-  static getWidth(double pixels) {
-    double x = getScreenWidth() / pixels;
-    return getScreenWidth() / x;
-  }
-
-  static getGreeting() {
- 
-    final String message = DateTime.now().hour < 12 ? "Good morning" : "Good afternoon";
-    return message;
+  static double width(BuildContext context) {
+    return MediaQuery.sizeOf(context).width;
   }
 }

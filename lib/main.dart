@@ -1,51 +1,46 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:nthaka_eco/global/widgets/bottom_nav.dart';
-import 'package:nthaka_eco/screens/onboarding/onboarding_screen.dart';
+import 'package:nthaka_eco/app/app_theme.dart';
+import 'package:nthaka_eco/app/memory_lifecycle.dart';
+import 'package:nthaka_eco/database/database_helper.dart';
+import 'package:nthaka_eco/global/widgets/main_shell.dart';
+import 'package:nthaka_eco/services/plant_disease_cv_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  if (Platform.isAndroid) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: 'AIzaSyB11TJAZtMDSIgBL3Q1_81svd_rx8SUWkg',
-        appId: '1:977014501663:android:073abe2a9cb856d495c02a',
-        messagingSenderId: '977014501663',
-        projectId: 'nthaka-eco',
-      ),
-    );
-  } else {
-    await Firebase.initializeApp();
-  }
-  
+  await DatabaseHelper.instance.database;
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _memoryObserver = MemoryLifecycleObserver();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(_memoryObserver);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(_memoryObserver);
+    PlantDiseaseCvService.instance.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Nthaka.Eco',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'OpenSans',
-      ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.active) {
-            final User? user = snapshot.data;
-            return user != null ? const BottomBar() : const OnBoardingScreen();
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
+      theme: AppTheme.light(),
+      home: const MainShell(),
     );
   }
 }

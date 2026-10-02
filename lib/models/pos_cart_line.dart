@@ -1,0 +1,43 @@
+class PosCartLine {
+  final int? catalogItemId;
+  final String name;
+  final double unitPrice;
+  int quantity;
+
+  PosCartLine({
+    this.catalogItemId,
+    required this.name,
+    required this.unitPrice,
+    this.quantity = 1,
+  });
+
+  double get lineTotal => unitPrice * quantity;
+
+  String get cartKey =>
+      catalogItemId != null ? 'id_$catalogItemId' : 'custom_$name|$unitPrice';
+
+  Map<String, dynamic> toJson() => {
+        'catalog_item_id': catalogItemId,
+        'name': name,
+        'unit_price': unitPrice,
+        'quantity': quantity,
+      };
+
+  factory PosCartLine.fromJson(Map<String, dynamic> json) {
+    return PosCartLine(
+      catalogItemId: json['catalog_item_id'] as int?,
+      name: json['name'] as String,
+      unitPrice: (json['unit_price'] as num).toDouble(),
+      quantity: json['quantity'] as int,
+    );
+  }
+
+  PosCartLine copyWith({int? quantity}) {
+    return PosCartLine(
+      catalogItemId: catalogItemId,
+      name: name,
+      unitPrice: unitPrice,
+      quantity: quantity ?? this.quantity,
+    );
+  }
+}

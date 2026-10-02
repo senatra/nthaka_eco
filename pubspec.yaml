@@ -7,21 +7,16 @@ environment:
   sdk: '>=3.0.5 <4.0.0'
 
 dependencies:
-  cloud_firestore: ^4.14.0
-  firebase_auth: ^4.16.0
-  firebase_core: ^2.24.2
-  firebase_storage: ^11.6.0
-  fluentui_icons: ^1.0.0
-  fluentui_system_icons: ^1.1.239
   flutter:
     sdk: flutter
-  flutter_svg: ^2.0.10+1
-  gap: ^3.0.1
-  get: ^4.6.5
-  google_fonts: ^6.2.1
-  http: ^1.2.1
-  http_multi_server: ^3.2.1
-  shared_preferences: ^2.2.3
+  image: ^4.2.0
+  image_picker: ^1.1.2
+  intl: ^0.19.0
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  pdf: ^3.11.1
+  share_plus: ^10.0.2
+  sqflite: ^2.3.3+1
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +30,8 @@ flutter:
     - assets/images/onboarding/
     - assets/images/app/
     - assets/fonts/
+    - assets/data/
+    - assets/model/
 
   fonts:
   - family: OpenSans
