@@ -30,176 +30,51 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _editBusinessName(String businessName) async {
-    final controller = TextEditingController(text: businessName);
-    final saved = await showDialog<bool>(
+    final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        scrollable: true,
-        title: const Text('Business details'),
-        content: TextField(
-          controller: controller,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'Business name',
-            helperText: 'Shown at the top of shared PDF receipts.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => _BusinessNameDialog(initial: businessName),
     );
-    if (saved == true && controller.text.trim().isNotEmpty) {
-      await DatabaseHelper.instance.updateBusinessName(controller.text);
+    if (name != null && name.isNotEmpty) {
+      await DatabaseHelper.instance.updateBusinessName(name);
       if (mounted) setState(() => _reload());
     }
-    controller.dispose();
   }
 
   Future<void> _editProfile(DeviceProfile profile) async {
-    final firstNameController = TextEditingController(text: profile.firstName);
-    final lastNameController = TextEditingController(text: profile.lastName);
-
-    final saved = await showDialog<bool>(
+    final result = await showDialog<_ProfileResult>(
       context: context,
-      builder: (context) => AlertDialog(
-        scrollable: true,
-        title: const Text('Device profile'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: firstNameController,
-              decoration: const InputDecoration(
-                labelText: 'First name',
-                helperText: 'Used only to identify this device.',
-              ),
-            ),
-            TextField(
-              controller: lastNameController,
-              decoration: const InputDecoration(labelText: 'Last name'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => _DeviceProfileDialog(profile: profile),
     );
-
-    if (saved == true) {
+    if (result != null) {
       await DatabaseHelper.instance.updateDeviceProfile(
         DeviceProfile(
-          firstName: firstNameController.text.trim(),
-          lastName: lastNameController.text.trim(),
+          firstName: result.firstName,
+          lastName: result.lastName,
           updatedAt: DateTime.now(),
         ),
       );
       if (mounted) setState(() => _reload());
     }
-
-    firstNameController.dispose();
-    lastNameController.dispose();
   }
 
   Future<void> _editSalesSettings() async {
-    final footerController = TextEditingController(
-      text: AppPreferences.receiptFooter.value,
-    );
-    var payment = AppPreferences.defaultPaymentMethod.value;
-    var feedback = AppPreferences.saleFeedback.value;
-    final taxController = TextEditingController(
-      text: AppPreferences.taxRate.value.toStringAsFixed(1),
-    );
-    final saved = await showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<_SalesSettingsResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            AppTheme.spacing16,
-            AppTheme.spacing8,
-            AppTheme.spacing16,
-            MediaQuery.viewInsetsOf(context).bottom + AppTheme.spacing16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Sales preferences',
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: AppTheme.spacing12),
-              DropdownButtonFormField<String>(
-                value: payment,
-                decoration:
-                    const InputDecoration(labelText: 'Default payment method'),
-                items: const ['Cash', 'Mobile money', 'Card']
-                    .map((value) =>
-                        DropdownMenuItem(value: value, child: Text(value)))
-                    .toList(),
-                onChanged: (value) => setSheetState(() => payment = value!),
-              ),
-              const SizedBox(height: AppTheme.spacing12),
-              TextField(
-                controller: taxController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Default tax rate (%)',
-                  helperText: 'Applied to new sales only. Default is 17.5%.',
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacing12),
-              TextField(
-                controller: footerController,
-                maxLines: 2,
-                decoration: const InputDecoration(labelText: 'Receipt footer'),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Sale confirmation feedback'),
-                subtitle:
-                    const Text('Play a short sound after each completed sale.'),
-                value: feedback,
-                onChanged: (value) => setSheetState(() => feedback = value),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Save preferences'),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => const _SalesSettingsSheet(),
     );
-    if (saved == true) {
-      final enteredTax = double.tryParse(taxController.text.trim());
+    if (result != null) {
+      final tax = result.tax;
       await AppPreferences.saveSalesSettings(
-        paymentMethod: payment,
-        footer: footerController.text.trim().isEmpty
+        paymentMethod: result.payment,
+        footer: result.footer.isEmpty
             ? 'Thank you for your business.'
-            : footerController.text.trim(),
-        feedback: feedback,
-        tax: enteredTax == null || enteredTax < 0 ? 17.5 : enteredTax,
+            : result.footer,
+        feedback: result.feedback,
+        tax: tax == null || tax < 0 ? 17.5 : tax,
       );
     }
-    footerController.dispose();
-    taxController.dispose();
     if (mounted) setState(() {});
   }
 
@@ -356,6 +231,223 @@ class _ProfilePageState extends State<ProfilePage> {
             'Powered by Nexa Circuit',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BusinessNameDialog extends StatefulWidget {
+  const _BusinessNameDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_BusinessNameDialog> createState() => _BusinessNameDialogState();
+}
+
+class _BusinessNameDialogState extends State<_BusinessNameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      scrollable: true,
+      title: const Text('Business details'),
+      content: TextField(
+        controller: _controller,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          labelText: 'Business name',
+          helperText: 'Shown at the top of shared PDF receipts.',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileResult {
+  const _ProfileResult(this.firstName, this.lastName);
+
+  final String firstName;
+  final String lastName;
+}
+
+class _DeviceProfileDialog extends StatefulWidget {
+  const _DeviceProfileDialog({required this.profile});
+
+  final DeviceProfile profile;
+
+  @override
+  State<_DeviceProfileDialog> createState() => _DeviceProfileDialogState();
+}
+
+class _DeviceProfileDialogState extends State<_DeviceProfileDialog> {
+  late final TextEditingController _first =
+      TextEditingController(text: widget.profile.firstName);
+  late final TextEditingController _last =
+      TextEditingController(text: widget.profile.lastName);
+
+  @override
+  void dispose() {
+    _first.dispose();
+    _last.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      scrollable: true,
+      title: const Text('Device profile'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _first,
+            decoration: const InputDecoration(
+              labelText: 'First name',
+              helperText: 'Used only to identify this device.',
+            ),
+          ),
+          TextField(
+            controller: _last,
+            decoration: const InputDecoration(labelText: 'Last name'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            _ProfileResult(_first.text.trim(), _last.text.trim()),
+          ),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SalesSettingsResult {
+  const _SalesSettingsResult({
+    required this.payment,
+    required this.footer,
+    required this.tax,
+    required this.feedback,
+  });
+
+  final String payment;
+  final String footer;
+  final double? tax;
+  final bool feedback;
+}
+
+class _SalesSettingsSheet extends StatefulWidget {
+  const _SalesSettingsSheet();
+
+  @override
+  State<_SalesSettingsSheet> createState() => _SalesSettingsSheetState();
+}
+
+class _SalesSettingsSheetState extends State<_SalesSettingsSheet> {
+  late final TextEditingController _footer =
+      TextEditingController(text: AppPreferences.receiptFooter.value);
+  late final TextEditingController _tax = TextEditingController(
+      text: AppPreferences.taxRate.value.toStringAsFixed(1));
+  late String _payment = AppPreferences.defaultPaymentMethod.value;
+  late bool _feedback = AppPreferences.saleFeedback.value;
+
+  @override
+  void dispose() {
+    _footer.dispose();
+    _tax.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        AppTheme.spacing16,
+        AppTheme.spacing8,
+        AppTheme.spacing16,
+        MediaQuery.viewInsetsOf(context).bottom + AppTheme.spacing16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Sales preferences',
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppTheme.spacing12),
+          DropdownButtonFormField<String>(
+            value: _payment,
+            decoration:
+                const InputDecoration(labelText: 'Default payment method'),
+            items: const ['Cash', 'Mobile money', 'Card']
+                .map((value) =>
+                    DropdownMenuItem(value: value, child: Text(value)))
+                .toList(),
+            onChanged: (value) => setState(() => _payment = value!),
+          ),
+          const SizedBox(height: AppTheme.spacing12),
+          TextField(
+            controller: _tax,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Default tax rate (%)',
+              helperText: 'Applied to new sales only. Default is 17.5%.',
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacing12),
+          TextField(
+            controller: _footer,
+            maxLines: 2,
+            decoration: const InputDecoration(labelText: 'Receipt footer'),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Sale confirmation feedback'),
+            subtitle:
+                const Text('Play a short sound after each completed sale.'),
+            value: _feedback,
+            onChanged: (value) => setState(() => _feedback = value),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              context,
+              _SalesSettingsResult(
+                payment: _payment,
+                footer: _footer.text.trim(),
+                tax: double.tryParse(_tax.text.trim()),
+                feedback: _feedback,
+              ),
+            ),
+            child: const Text('Save preferences'),
           ),
         ],
       ),
