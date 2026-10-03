@@ -29,7 +29,13 @@ class _InventoryBatchesScreenState extends State<InventoryBatchesScreen> {
 
   Future<void> _addBatch() async {
     final items = await _itemsFuture;
-    if (!mounted || items.isEmpty) return;
+    if (!mounted) return;
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add an item to your catalog first.')),
+      );
+      return;
+    }
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -64,19 +70,25 @@ class _InventoryBatchesScreenState extends State<InventoryBatchesScreen> {
             }
             final batches = snapshot.data!;
             if (batches.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(AppTheme.spacing24),
-                  child: Text(
-                    'No active batches yet. Receive a batch to track quantities, cost, and expiry dates.',
-                    textAlign: TextAlign.center,
-                  ),
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppTheme.spacing24),
+                  children: const [
+                    SizedBox(height: 120),
+                    Text(
+                      'No active batches yet. Receive a batch to track quantities, cost, and expiry dates.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               );
             }
             return RefreshIndicator(
-              onRefresh: () async => setState(_reload),
+              onRefresh: _refresh,
               child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
                   AppTheme.spacing16,
                   AppTheme.spacing16,
@@ -93,6 +105,11 @@ class _InventoryBatchesScreenState extends State<InventoryBatchesScreen> {
           },
         ),
       );
+
+  Future<void> _refresh() async {
+    setState(_reload);
+    await _batchesFuture;
+  }
 }
 
 class _BatchEntrySheet extends StatefulWidget {
@@ -135,16 +152,24 @@ class _BatchEntrySheetState extends State<_BatchEntrySheet> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
-    await DatabaseHelper.instance.createInventoryBatch(
-      itemId: _item.itemId,
-      batchCode: _codeController.text,
-      quantity: int.parse(_quantityController.text),
-      unitCost: double.tryParse(_costController.text),
-      receivedAt: DateTime.now(),
-      expiresAt: _expiresAt,
-      notes: _notesController.text,
-    );
-    if (mounted) Navigator.pop(context, true);
+    try {
+      await DatabaseHelper.instance.createInventoryBatch(
+        itemId: _item.itemId,
+        batchCode: _codeController.text.trim(),
+        quantity: int.parse(_quantityController.text),
+        unitCost: double.tryParse(_costController.text),
+        receivedAt: DateTime.now(),
+        expiresAt: _expiresAt,
+        notes: _notesController.text.trim(),
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save the batch. Try again.')),
+      );
+    }
   }
 
   @override
