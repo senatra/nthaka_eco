@@ -3,6 +3,7 @@ import 'package:nthaka_eco/app/app_theme.dart';
 import 'package:nthaka_eco/database/database_helper.dart';
 import 'package:nthaka_eco/models/item.dart';
 import 'item_form_screen.dart';
+import 'inventory_tools_screen.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -78,7 +79,19 @@ class _ItemsScreenState extends State<ItemsScreen> {
             (item.barcode?.contains(query) ?? false))
         .toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Items')),
+      appBar: AppBar(
+        title: const Text('Items'),
+        actions: [
+          IconButton(
+            tooltip: 'Inventory tools',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const InventoryToolsScreen()),
+            ).then((_) => _loadPage(reset: true)),
+            icon: const Icon(Icons.inventory_outlined),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _openForm(),
           tooltip: 'Add an item',
@@ -186,6 +199,16 @@ class _ItemCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(item.category,
                           style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        item.isTaxable ? 'Taxable' : 'Tax exempt',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: item.isTaxable
+                                  ? Theme.of(context).colorScheme.secondary
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                            ),
+                      ),
                       if (item.sku?.isNotEmpty ?? false)
                         Text('SKU: ${item.sku}',
                             style: Theme.of(context).textTheme.labelSmall)

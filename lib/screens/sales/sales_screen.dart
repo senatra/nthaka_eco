@@ -17,7 +17,7 @@ class SalesScreen extends StatelessWidget {
           title: const Text('Sales'),
           bottom: const TabBar(
             indicatorSize: TabBarIndicatorSize.tab,
-            tabs: const [
+            tabs: [
               Tab(
                 height: 48,
                 icon: Icon(Icons.point_of_sale_outlined, size: 20),

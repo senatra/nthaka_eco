@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:nthaka_eco/models/device_profile.dart';
 import 'package:nthaka_eco/models/disease_report.dart';
 import 'package:nthaka_eco/models/item.dart';
+import 'package:nthaka_eco/models/inventory_batch.dart';
 import 'package:nthaka_eco/models/paged_result.dart';
 import 'package:nthaka_eco/models/pos_session_state.dart';
 import 'package:nthaka_eco/models/sale.dart';
 import 'package:nthaka_eco/models/sales_report.dart';
+import 'package:nthaka_eco/models/stock_adjustment.dart';
 import 'package:nthaka_eco/services/local_storage_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -18,7 +20,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const _dbName = 'nthaka_eco.db';
-  static const _dbVersion = 8;
+  static const _dbVersion = 12;
 
   static const _settingWelcomeCompleted = 'welcome_completed';
   static const _settingAuthMode = 'auth_mode';
@@ -63,6 +65,7 @@ class DatabaseHelper {
         sku TEXT,
         barcode TEXT,
         is_favorite INTEGER NOT NULL DEFAULT 0,
+        is_taxable INTEGER NOT NULL DEFAULT 1,
         stock_quantity INTEGER NOT NULL DEFAULT 0,
         low_stock_threshold INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
@@ -77,6 +80,8 @@ class DatabaseHelper {
         customer_name TEXT,
         notes TEXT,
         discount_amount REAL NOT NULL DEFAULT 0,
+        tax_rate REAL NOT NULL DEFAULT 0,
+        tax_amount REAL NOT NULL DEFAULT 0,
         payment_method TEXT NOT NULL DEFAULT 'Cash',
         amount_paid REAL,
         change_amount REAL NOT NULL DEFAULT 0,
@@ -85,6 +90,22 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE stock_adjustments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER NOT NULL,
+        previous_quantity INTEGER NOT NULL,
+        new_quantity INTEGER NOT NULL,
+        change_quantity INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await _createBatchTables(db);
 
     await db.execute('''
       CREATE TABLE sale_items (
@@ -340,9 +361,71 @@ class DatabaseHelper {
         await db.execute(
             'ALTER TABLE items ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 0');
         break;
+      case 9:
+        await db.execute(
+          'ALTER TABLE sales ADD COLUMN tax_rate REAL NOT NULL DEFAULT 0',
+        );
+        await db.execute(
+          'ALTER TABLE sales ADD COLUMN tax_amount REAL NOT NULL DEFAULT 0',
+        );
+        break;
+      case 10:
+        await db.execute(
+          'ALTER TABLE items ADD COLUMN is_taxable INTEGER NOT NULL DEFAULT 1',
+        );
+        break;
+      case 11:
+        await db.execute('''
+          CREATE TABLE stock_adjustments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            previous_quantity INTEGER NOT NULL,
+            new_quantity INTEGER NOT NULL,
+            change_quantity INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            notes TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+          )
+        ''');
+        break;
+      case 12:
+        await _createBatchTables(db);
+        break;
       default:
         break;
     }
+  }
+
+  Future<void> _createBatchTables(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS inventory_batches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER NOT NULL,
+        batch_code TEXT NOT NULL,
+        quantity_received INTEGER NOT NULL,
+        quantity_remaining INTEGER NOT NULL,
+        unit_cost REAL,
+        received_at TEXT NOT NULL,
+        expires_at TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sale_item_batches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_item_id INTEGER NOT NULL,
+        batch_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        FOREIGN KEY (sale_item_id) REFERENCES sale_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (batch_id) REFERENCES inventory_batches(id) ON DELETE RESTRICT
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_batches_item_fifo ON inventory_batches(item_id, expires_at, received_at)',
+    );
   }
 
   Future<void> _seedReferenceData(Database db) async {
@@ -488,6 +571,25 @@ class DatabaseHelper {
     return Item.fromMap(rows.first);
   }
 
+  Future<Item?> getItemByBarcode(
+    String barcode, {
+    int? excludingItemId,
+  }) async {
+    final db = await database;
+    final where =
+        excludingItemId == null ? 'barcode = ?' : 'barcode = ? AND id != ?';
+    final args = excludingItemId == null
+        ? <Object>[barcode]
+        : <Object>[barcode, excludingItemId];
+    final rows = await db.query(
+      'items',
+      where: where,
+      whereArgs: args,
+      limit: 1,
+    );
+    return rows.isEmpty ? null : Item.fromMap(rows.first);
+  }
+
   Future<Item> createItem(Item item) async {
     final db = await database;
     final id = await db.insert('items', {
@@ -498,6 +600,7 @@ class DatabaseHelper {
       'sku': item.sku,
       'barcode': item.barcode,
       'is_favorite': item.isFavorite ? 1 : 0,
+      'is_taxable': item.isTaxable ? 1 : 0,
       'stock_quantity': item.stockQuantity,
       'low_stock_threshold': item.lowStockThreshold,
       'created_at': DateTime.now().toIso8601String(),
@@ -518,12 +621,202 @@ class DatabaseHelper {
         'sku': item.sku,
         'barcode': item.barcode,
         'is_favorite': item.isFavorite ? 1 : 0,
+        'is_taxable': item.isTaxable ? 1 : 0,
         'stock_quantity': item.stockQuantity,
         'low_stock_threshold': item.lowStockThreshold,
       },
       where: 'id = ?',
       whereArgs: [item.itemId],
     );
+  }
+
+  Future<void> adjustItemStock({
+    required int itemId,
+    required int changeQuantity,
+    required String reason,
+    String? notes,
+  }) async {
+    await _recordStockChange(
+      itemId: itemId,
+      changeQuantity: changeQuantity,
+      reason: reason,
+      notes: notes,
+    );
+  }
+
+  Future<void> setItemStockCount({
+    required int itemId,
+    required int actualQuantity,
+    String? notes,
+  }) async {
+    final db = await database;
+    final rows = await db.query(
+      'items',
+      columns: ['stock_quantity'],
+      where: 'id = ?',
+      whereArgs: [itemId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return;
+    final current = rows.first['stock_quantity'] as int;
+    await _recordStockChange(
+      itemId: itemId,
+      changeQuantity: actualQuantity - current,
+      reason: 'Stock count',
+      notes: notes,
+      reconcileBatches: true,
+    );
+  }
+
+  Future<void> _recordStockChange({
+    required int itemId,
+    required int changeQuantity,
+    required String reason,
+    String? notes,
+    bool reconcileBatches = false,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'items',
+        columns: ['stock_quantity'],
+        where: 'id = ?',
+        whereArgs: [itemId],
+        limit: 1,
+      );
+      if (rows.isEmpty) return;
+      final previous = rows.first['stock_quantity'] as int;
+      final next = (previous + changeQuantity).clamp(0, 2147483647);
+      await txn.update(
+        'items',
+        {'stock_quantity': next},
+        where: 'id = ?',
+        whereArgs: [itemId],
+      );
+      if (reconcileBatches && next < previous) {
+        await _reduceBatchQuantities(
+          txn,
+          itemId: itemId,
+          quantity: previous - next,
+        );
+      }
+      await txn.insert('stock_adjustments', {
+        'item_id': itemId,
+        'previous_quantity': previous,
+        'new_quantity': next,
+        'change_quantity': next - previous,
+        'reason': reason,
+        'notes': notes?.trim().isEmpty ?? true ? null : notes!.trim(),
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    });
+  }
+
+  Future<void> _reduceBatchQuantities(
+    Transaction txn, {
+    required int itemId,
+    required int quantity,
+  }) async {
+    final batches = await txn.rawQuery('''
+      SELECT id, quantity_remaining FROM inventory_batches
+      WHERE item_id = ? AND quantity_remaining > 0
+      ORDER BY CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END DESC,
+               expires_at DESC, received_at DESC
+    ''', [itemId]);
+    var remaining = quantity;
+    for (final batch in batches) {
+      if (remaining == 0) break;
+      final available = batch['quantity_remaining'] as int;
+      final removed = available < remaining ? available : remaining;
+      await txn.update(
+        'inventory_batches',
+        {'quantity_remaining': available - removed},
+        where: 'id = ?',
+        whereArgs: [batch['id']],
+      );
+      remaining -= removed;
+    }
+  }
+
+  Future<List<StockAdjustment>> getStockAdjustments({int limit = 50}) async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT sa.*, i.item_name
+      FROM stock_adjustments sa
+      INNER JOIN items i ON i.id = sa.item_id
+      ORDER BY sa.created_at DESC
+      LIMIT ?
+    ''', [limit]);
+    return rows.map(StockAdjustment.fromMap).toList();
+  }
+
+  Future<InventoryBatch> createInventoryBatch({
+    required int itemId,
+    required String batchCode,
+    required int quantity,
+    double? unitCost,
+    required DateTime receivedAt,
+    DateTime? expiresAt,
+    String? notes,
+  }) async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final itemRows = await txn.query(
+        'items',
+        columns: ['stock_quantity'],
+        where: 'id = ?',
+        whereArgs: [itemId],
+        limit: 1,
+      );
+      if (itemRows.isEmpty) throw StateError('Item no longer exists');
+      final previous = itemRows.first['stock_quantity'] as int;
+      final now = DateTime.now();
+      final batchId = await txn.insert('inventory_batches', {
+        'item_id': itemId,
+        'batch_code': batchCode.trim(),
+        'quantity_received': quantity,
+        'quantity_remaining': quantity,
+        'unit_cost': unitCost,
+        'received_at': receivedAt.toIso8601String(),
+        'expires_at': expiresAt?.toIso8601String(),
+        'notes': notes?.trim().isEmpty ?? true ? null : notes!.trim(),
+        'created_at': now.toIso8601String(),
+      });
+      final next = previous + quantity;
+      await txn.update('items', {'stock_quantity': next},
+          where: 'id = ?', whereArgs: [itemId]);
+      await txn.insert('stock_adjustments', {
+        'item_id': itemId,
+        'previous_quantity': previous,
+        'new_quantity': next,
+        'change_quantity': quantity,
+        'reason': 'Batch received',
+        'notes':
+            'Batch ${batchCode.trim()}${notes?.trim().isNotEmpty == true ? ' · ${notes!.trim()}' : ''}',
+        'created_at': now.toIso8601String(),
+      });
+      final rows = await txn.rawQuery('''
+        SELECT b.*, i.item_name FROM inventory_batches b
+        INNER JOIN items i ON i.id = b.item_id WHERE b.id = ?
+      ''', [batchId]);
+      return InventoryBatch.fromMap(rows.single);
+    });
+  }
+
+  Future<List<InventoryBatch>> getInventoryBatches({
+    int limit = 100,
+    bool includeEmpty = false,
+  }) async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT b.*, i.item_name FROM inventory_batches b
+      INNER JOIN items i ON i.id = b.item_id
+      ${includeEmpty ? '' : 'WHERE b.quantity_remaining > 0'}
+      ORDER BY CASE WHEN b.expires_at IS NULL THEN 1 ELSE 0 END,
+               b.expires_at ASC, b.received_at ASC
+      LIMIT ?
+    ''', [limit]);
+    return rows.map(InventoryBatch.fromMap).toList();
   }
 
   Future<List<String>> getItemCategories() async {
@@ -686,6 +979,8 @@ class DatabaseHelper {
         'customer_name': sale.customerName,
         'notes': sale.notes,
         'discount_amount': sale.discountAmount,
+        'tax_rate': sale.taxRate,
+        'tax_amount': sale.taxAmount,
         'payment_method': sale.paymentMethod,
         'amount_paid': sale.amountPaid,
         'change_amount': sale.changeAmount,
@@ -695,13 +990,21 @@ class DatabaseHelper {
       });
 
       for (final item in sale.items) {
-        await txn.insert('sale_items', {
+        final saleItemId = await txn.insert('sale_items', {
           'sale_id': saleId,
           'catalog_item_id': item.catalogItemId,
           'item_name': item.itemName,
           'quantity': item.quantity,
           'price': item.price,
         });
+        if (item.catalogItemId != null) {
+          await _allocateBatchesForSaleItem(
+            txn,
+            saleItemId: saleItemId,
+            itemId: item.catalogItemId!,
+            quantity: item.quantity,
+          );
+        }
       }
 
       for (final item in sale.items) {
@@ -730,6 +1033,39 @@ class DatabaseHelper {
     });
   }
 
+  Future<void> _allocateBatchesForSaleItem(
+    Transaction txn, {
+    required int saleItemId,
+    required int itemId,
+    required int quantity,
+  }) async {
+    final batches = await txn.rawQuery('''
+      SELECT id, quantity_remaining FROM inventory_batches
+      WHERE item_id = ? AND quantity_remaining > 0
+      ORDER BY CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END,
+               expires_at ASC, received_at ASC
+    ''', [itemId]);
+    var remainingToAllocate = quantity;
+    for (final batch in batches) {
+      if (remainingToAllocate == 0) break;
+      final available = batch['quantity_remaining'] as int;
+      final used =
+          available < remainingToAllocate ? available : remainingToAllocate;
+      await txn.update(
+        'inventory_batches',
+        {'quantity_remaining': available - used},
+        where: 'id = ?',
+        whereArgs: [batch['id']],
+      );
+      await txn.insert('sale_item_batches', {
+        'sale_item_id': saleItemId,
+        'batch_id': batch['id'],
+        'quantity': used,
+      });
+      remainingToAllocate -= used;
+    }
+  }
+
   Future<void> updateSale(Sale sale) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -741,6 +1077,8 @@ class DatabaseHelper {
           'customer_name': sale.customerName,
           'notes': sale.notes,
           'discount_amount': sale.discountAmount,
+          'tax_rate': sale.taxRate,
+          'tax_amount': sale.taxAmount,
           'payment_method': sale.paymentMethod,
           'amount_paid': sale.amountPaid,
           'change_amount': sale.changeAmount,
@@ -750,22 +1088,6 @@ class DatabaseHelper {
         where: 'id = ?',
         whereArgs: [sale.id],
       );
-
-      await txn.delete(
-        'sale_items',
-        where: 'sale_id = ?',
-        whereArgs: [sale.id],
-      );
-
-      for (final item in sale.items) {
-        await txn.insert('sale_items', {
-          'sale_id': sale.id,
-          'catalog_item_id': item.catalogItemId,
-          'item_name': item.itemName,
-          'quantity': item.quantity,
-          'price': item.price,
-        });
-      }
     });
   }
 
@@ -793,6 +1115,17 @@ class DatabaseHelper {
             [item.quantity, item.catalogItemId],
           );
         }
+      }
+      final allocations = await txn.rawQuery('''
+        SELECT sib.batch_id, sib.quantity FROM sale_item_batches sib
+        INNER JOIN sale_items si ON si.id = sib.sale_item_id
+        WHERE si.sale_id = ?
+      ''', [id]);
+      for (final allocation in allocations) {
+        await txn.rawUpdate(
+          'UPDATE inventory_batches SET quantity_remaining = quantity_remaining + ? WHERE id = ?',
+          [allocation['quantity'], allocation['batch_id']],
+        );
       }
     });
   }

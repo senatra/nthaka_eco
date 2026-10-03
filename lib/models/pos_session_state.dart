@@ -7,20 +7,31 @@ class PosSessionState {
   final String? customerName;
   final String? notes;
   final double discountAmount;
+  final double taxRate;
 
   const PosSessionState({
     this.lines = const [],
     this.customerName,
     this.notes,
     this.discountAmount = 0,
+    this.taxRate = 17.5,
   });
 
   double get subtotal => lines.fold(0, (sum, line) => sum + line.lineTotal);
 
-  double get total {
-    final value = subtotal - discountAmount;
+  double get taxableAmount {
+    final taxableSubtotal = lines
+        .where((line) => line.isTaxable)
+        .fold<double>(0, (sum, line) => sum + line.lineTotal);
+    if (subtotal == 0) return 0;
+    final taxDiscount = discountAmount * taxableSubtotal / subtotal;
+    final value = taxableSubtotal - taxDiscount;
     return value < 0 ? 0 : value;
   }
+
+  double get taxAmount => taxableAmount * taxRate / 100;
+
+  double get total => taxableAmount + taxAmount;
 
   int get itemCount => lines.fold(0, (sum, line) => sum + line.quantity);
 
@@ -31,12 +42,14 @@ class PosSessionState {
     String? customerName,
     String? notes,
     double? discountAmount,
+    double? taxRate,
   }) {
     return PosSessionState(
       lines: lines ?? this.lines,
       customerName: customerName ?? this.customerName,
       notes: notes ?? this.notes,
       discountAmount: discountAmount ?? this.discountAmount,
+      taxRate: taxRate ?? this.taxRate,
     );
   }
 
@@ -46,6 +59,7 @@ class PosSessionState {
       'customer_name': customerName,
       'notes': notes,
       'discount_amount': discountAmount,
+      'tax_rate': taxRate,
     };
   }
 
@@ -58,6 +72,7 @@ class PosSessionState {
       customerName: json['customer_name'] as String?,
       notes: json['notes'] as String?,
       discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0,
+      taxRate: (json['tax_rate'] as num?)?.toDouble() ?? 17.5,
     );
   }
 

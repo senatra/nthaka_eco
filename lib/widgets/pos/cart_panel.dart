@@ -223,6 +223,13 @@ class CartPanel extends StatelessWidget {
                     foreground: AppTheme.posAccent,
                     muted: muted,
                   ),
+                if (session.taxAmount > 0)
+                  _TotalRow(
+                    label: 'Tax (${session.taxRate.toStringAsFixed(1)}%)',
+                    value: session.taxAmount,
+                    foreground: onPanel,
+                    muted: muted,
+                  ),
                 const SizedBox(height: AppTheme.spacing4),
                 _TotalRow(
                   label: 'Total due',

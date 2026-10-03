@@ -60,7 +60,9 @@ class _PosScreenState extends State<PosScreen> {
       return;
     }
     setState(() {
-      _session = draft;
+      _session = draft.isEmpty
+          ? draft.copyWith(taxRate: AppPreferences.taxRate.value)
+          : draft;
       _categories = ['All', ...categories.where((c) => c != 'All')];
     });
     await _loadCatalog();
@@ -129,6 +131,7 @@ class _PosScreenState extends State<PosScreen> {
             catalogItemId: item.itemId,
             name: item.itemName,
             unitPrice: price,
+            isTaxable: item.isTaxable,
             quantity: quantity,
           ),
         ),
@@ -213,7 +216,7 @@ class _PosScreenState extends State<PosScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    _setSession(const PosSessionState());
+    _setSession(PosSessionState(taxRate: AppPreferences.taxRate.value));
   }
 
   Future<void> _holdTicket() async {
@@ -232,7 +235,7 @@ class _PosScreenState extends State<PosScreen> {
 
     await DatabaseHelper.instance.parkSale(label, _session);
     if (!mounted) return;
-    _setSession(const PosSessionState());
+    _setSession(PosSessionState(taxRate: AppPreferences.taxRate.value));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Held: $label')),
     );
@@ -265,6 +268,7 @@ class _PosScreenState extends State<PosScreen> {
       PosSessionState(
         lines: _session.lines,
         discountAmount: _session.discountAmount,
+        taxRate: _session.taxRate,
         customerName: details.customer,
         notes: details.notes,
       ),
@@ -300,6 +304,8 @@ class _PosScreenState extends State<PosScreen> {
         customerName: _session.customerName,
         notes: _session.notes,
         discountAmount: _session.discountAmount,
+        taxRate: _session.taxRate,
+        taxAmount: _session.taxAmount,
         paymentMethod: payment.method,
         amountPaid: payment.amountPaid,
         changeAmount: payment.change,
@@ -312,7 +318,9 @@ class _PosScreenState extends State<PosScreen> {
       return;
     }
 
-    setState(() => _session = const PosSessionState());
+    setState(
+      () => _session = PosSessionState(taxRate: AppPreferences.taxRate.value),
+    );
     if (AppPreferences.saleFeedback.value) {
       SystemSound.play(SystemSoundType.click);
     }
@@ -839,8 +847,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
           SegmentedButton<String>(
             segments: const [
               ButtonSegment(value: 'Cash', label: Text('Cash')),
-              ButtonSegment(
-                  value: 'Mobile money', label: Text('Mobile money')),
+              ButtonSegment(value: 'Mobile money', label: Text('Mobile money')),
               ButtonSegment(value: 'Card', label: Text('Card')),
             ],
             selected: {_method},

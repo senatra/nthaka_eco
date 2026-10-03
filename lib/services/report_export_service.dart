@@ -113,12 +113,13 @@ class ReportExportService {
             .join('\n'),
       )
       ..writeln()
-      ..writeln('Receipt ID,Date,Total,Customer,Notes')
+      ..writeln(
+          'Receipt ID,Date,Subtotal,Discount,Tax rate,Tax amount,Total,Customer,Notes')
       ..writeln(
         report.transactions
             .map(
               (sale) =>
-                  '${sale.id},${sale.date.toIso8601String()},${sale.totalAmount.toStringAsFixed(2)},${_csvEscape(sale.customerName ?? '')},${_csvEscape(sale.notes ?? '')}',
+                  '${sale.id},${sale.date.toIso8601String()},${(sale.totalAmount - sale.taxAmount + sale.discountAmount).toStringAsFixed(2)},${sale.discountAmount.toStringAsFixed(2)},${sale.taxRate.toStringAsFixed(2)},${sale.taxAmount.toStringAsFixed(2)},${sale.totalAmount.toStringAsFixed(2)},${_csvEscape(sale.customerName ?? '')},${_csvEscape(sale.notes ?? '')}',
             )
             .join('\n'),
       );
@@ -237,6 +238,11 @@ class ReportExportService {
                 _receiptTotalRow('Subtotal', subtotal),
                 if (sale.discountAmount > 0)
                   _receiptTotalRow('Discount', -sale.discountAmount),
+                if (sale.taxAmount > 0)
+                  _receiptTotalRow(
+                    'Tax (${sale.taxRate.toStringAsFixed(1)}%)',
+                    sale.taxAmount,
+                  ),
                 _receiptTotalRow('Total paid', sale.totalAmount,
                     emphasize: true),
                 if (sale.notes?.isNotEmpty ?? false) ...[

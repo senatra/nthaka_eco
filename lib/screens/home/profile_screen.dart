@@ -122,6 +122,9 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     var payment = AppPreferences.defaultPaymentMethod.value;
     var feedback = AppPreferences.saleFeedback.value;
+    final taxController = TextEditingController(
+      text: AppPreferences.taxRate.value.toStringAsFixed(1),
+    );
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -153,6 +156,16 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: AppTheme.spacing12),
               TextField(
+                controller: taxController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Default tax rate (%)',
+                  helperText: 'Applied to new sales only. Default is 17.5%.',
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacing12),
+              TextField(
                 controller: footerController,
                 maxLines: 2,
                 decoration: const InputDecoration(labelText: 'Receipt footer'),
@@ -175,15 +188,18 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
     if (saved == true) {
+      final enteredTax = double.tryParse(taxController.text.trim());
       await AppPreferences.saveSalesSettings(
         paymentMethod: payment,
         footer: footerController.text.trim().isEmpty
             ? 'Thank you for your business.'
             : footerController.text.trim(),
         feedback: feedback,
+        tax: enteredTax == null || enteredTax < 0 ? 17.5 : enteredTax,
       );
     }
     footerController.dispose();
+    taxController.dispose();
     if (mounted) setState(() {});
   }
 
@@ -279,16 +295,16 @@ class _ProfilePageState extends State<ProfilePage> {
           ListTile(
             leading: const Icon(Icons.receipt_long_outlined),
             title: const Text('Sales preferences'),
-            subtitle:
-                const Text('Receipt footer, payment default, and feedback'),
+            subtitle: const Text(
+                'Tax, receipt footer, payment default, and feedback'),
             trailing: const Icon(Icons.chevron_right),
             onTap: _editSalesSettings,
           ),
           const Divider(),
           const ListTile(
-            leading: const Icon(Icons.shield_outlined),
-            title: const Text('Your data stays on this device'),
-            subtitle: const Text(
+            leading: Icon(Icons.shield_outlined),
+            title: Text('Your data stays on this device'),
+            subtitle: Text(
               'Sales, inventory, crop scans, and settings are stored locally. '
               'They are only shared when you choose to export a file.',
             ),

@@ -7,6 +7,7 @@ abstract final class AppPreferences {
   static final defaultPaymentMethod = ValueNotifier('Cash');
   static final receiptFooter = ValueNotifier('Thank you for your business.');
   static final saleFeedback = ValueNotifier(false);
+  static final taxRate = ValueNotifier(17.5);
 
   static Future<void> load() async {
     themeMode.value = _themeFromValue(
@@ -22,6 +23,11 @@ abstract final class AppPreferences {
     saleFeedback.value = await DatabaseHelper.instance
             .getSetting('sale_feedback', fallback: 'false') ==
         'true';
+    taxRate.value = double.tryParse(
+          await DatabaseHelper.instance
+              .getSetting('tax_rate', fallback: '17.5'),
+        ) ??
+        17.5;
   }
 
   static Future<void> setThemeMode(ThemeMode value) async {
@@ -37,16 +43,19 @@ abstract final class AppPreferences {
   static Future<void> saveSalesSettings(
       {required String paymentMethod,
       required String footer,
-      required bool feedback}) async {
+      required bool feedback,
+      required double tax}) async {
     defaultPaymentMethod.value = paymentMethod;
     receiptFooter.value = footer;
     saleFeedback.value = feedback;
+    taxRate.value = tax;
     await Future.wait([
       DatabaseHelper.instance
           .updateSetting('default_payment_method', paymentMethod),
       DatabaseHelper.instance.updateSetting('receipt_footer', footer),
       DatabaseHelper.instance
           .updateSetting('sale_feedback', feedback.toString()),
+      DatabaseHelper.instance.updateSetting('tax_rate', tax.toString()),
     ]);
   }
 

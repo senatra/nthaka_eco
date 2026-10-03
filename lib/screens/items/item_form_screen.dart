@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:nthaka_eco/app/app_theme.dart';
 import 'package:nthaka_eco/database/database_helper.dart';
 import 'package:nthaka_eco/models/item.dart';
+import 'package:nthaka_eco/screens/sales/barcode_scanner_screen.dart';
 
 class ItemFormScreen extends StatefulWidget {
   final int? itemId;
@@ -24,6 +25,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   final _stockController = TextEditingController(text: '0');
   final _lowStockController = TextEditingController(text: '0');
   bool _isFavorite = false;
+  bool _isTaxable = true;
   late bool _loading;
   bool _saving = false;
 
@@ -51,6 +53,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _skuController.text = item.sku ?? '';
     _barcodeController.text = item.barcode ?? '';
     _isFavorite = item.isFavorite;
+    _isTaxable = item.isTaxable;
     _stockController.text = item.stockQuantity.toString();
     _lowStockController.text = item.lowStockThreshold.toString();
     setState(() => _loading = false);
@@ -61,6 +64,27 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
       return;
     }
     setState(() => _saving = true);
+
+    final barcode = _barcodeController.text.trim();
+    if (barcode.isNotEmpty) {
+      final duplicate = await DatabaseHelper.instance.getItemByBarcode(
+        barcode,
+        excludingItemId: widget.itemId,
+      );
+      if (duplicate != null) {
+        if (mounted) {
+          setState(() => _saving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'This barcode is already assigned to ${duplicate.itemName}.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
 
     final unitPrice = double.tryParse(_priceController.text.trim()) ?? 0;
     final category = _categoryController.text.trim().isEmpty
@@ -84,6 +108,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
               ? null
               : _barcodeController.text.trim(),
           isFavorite: _isFavorite,
+          isTaxable: _isTaxable,
           stockQuantity: int.tryParse(_stockController.text) ?? 0,
           lowStockThreshold: int.tryParse(_lowStockController.text) ?? 0,
         ),
@@ -105,6 +130,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
               ? null
               : _barcodeController.text.trim(),
           isFavorite: _isFavorite,
+          isTaxable: _isTaxable,
           stockQuantity: int.tryParse(_stockController.text) ?? 0,
           lowStockThreshold: int.tryParse(_lowStockController.text) ?? 0,
         ),
@@ -114,6 +140,18 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     if (mounted) {
       Navigator.pop(context, true);
     }
+  }
+
+  Future<void> _scanBarcode() async {
+    final barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (barcode == null || !mounted) return;
+    _barcodeController.text = barcode;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Barcode captured: $barcode')),
+    );
   }
 
   Future<void> _delete() async {
@@ -282,11 +320,24 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                       const SizedBox(height: AppTheme.spacing12),
                       TextFormField(
                         controller: _barcodeController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
                           labelText: 'Barcode (optional)',
                           helperText:
-                              'Type or scan the barcode number to find it quickly in POS.',
+                              'Scan it with the camera or enter the code manually.',
+                          suffixIcon: IconButton(
+                            tooltip: 'Scan barcode with camera',
+                            onPressed: _scanBarcode,
+                            icon: const Icon(Icons.document_scanner_outlined),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _scanBarcode,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: const Text('Scan barcode'),
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacing12),
@@ -333,6 +384,21 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                         value: _isFavorite,
                         onChanged: (value) =>
                             setState(() => _isFavorite = value),
+                      ),
+                      SwitchListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.controlRadius),
+                        ),
+                        tileColor: Theme.of(context).colorScheme.surface,
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Taxable item'),
+                        subtitle: const Text(
+                          'Apply the default tax rate when this item is sold.',
+                        ),
+                        value: _isTaxable,
+                        onChanged: (value) =>
+                            setState(() => _isTaxable = value),
                       ),
                       const SizedBox(height: AppTheme.spacing24),
                       SizedBox(

@@ -26,7 +26,12 @@ class WelcomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(flex: 2),
-              Icon(Icons.eco, size: 72, color: scheme.primary),
+              Image.asset(
+                'assets/images/app/nthakalogo.png',
+                width: 72,
+                height: 72,
+                fit: BoxFit.contain,
+              ),
               const SizedBox(height: AppTheme.spacing16),
               Text(
                 'Nthaka.Eco',

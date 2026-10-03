@@ -7,6 +7,7 @@ class Item {
   final String? sku;
   final String? barcode;
   final bool isFavorite;
+  final bool isTaxable;
   final int stockQuantity;
   final int lowStockThreshold;
   final DateTime? createdAt;
@@ -20,6 +21,7 @@ class Item {
     this.sku,
     this.barcode,
     this.isFavorite = false,
+    this.isTaxable = true,
     this.stockQuantity = 0,
     this.lowStockThreshold = 0,
     this.createdAt,
@@ -37,6 +39,7 @@ class Item {
       sku: map['sku'] as String?,
       barcode: map['barcode'] as String?,
       isFavorite: (map['is_favorite'] as num?)?.toInt() == 1,
+      isTaxable: (map['is_taxable'] as num?)?.toInt() != 0,
       stockQuantity: (map['stock_quantity'] as num?)?.toInt() ?? 0,
       lowStockThreshold: (map['low_stock_threshold'] as num?)?.toInt() ?? 0,
       createdAt: map['created_at'] != null
@@ -55,6 +58,7 @@ class Item {
       'sku': sku,
       'barcode': barcode,
       'is_favorite': isFavorite ? 1 : 0,
+      'is_taxable': isTaxable ? 1 : 0,
       'stock_quantity': stockQuantity,
       'low_stock_threshold': lowStockThreshold,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),

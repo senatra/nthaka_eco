@@ -3,27 +3,27 @@ import 'package:nthaka_eco/app/app_theme.dart';
 import 'package:nthaka_eco/database/database_helper.dart';
 import 'package:nthaka_eco/models/sale.dart';
 import 'package:nthaka_eco/services/report_export_service.dart';
- 
+
 class _CorrectionResult {
   final String paymentMethod;
   final String? notes;
   final String reason;
   const _CorrectionResult(this.paymentMethod, this.notes, this.reason);
 }
- 
+
 class _CorrectionSheet extends StatefulWidget {
   final Sale sale;
   const _CorrectionSheet({required this.sale});
- 
+
   @override
   State<_CorrectionSheet> createState() => _CorrectionSheetState();
 }
- 
+
 class _CorrectionSheetState extends State<_CorrectionSheet> {
   late final TextEditingController _notesController;
   late final TextEditingController _reasonController;
   late String _paymentMethod;
- 
+
   @override
   void initState() {
     super.initState();
@@ -31,14 +31,14 @@ class _CorrectionSheetState extends State<_CorrectionSheet> {
     _reasonController = TextEditingController();
     _paymentMethod = widget.sale.paymentMethod;
   }
- 
+
   @override
   void dispose() {
     _notesController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
- 
+
   void _submit() {
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
@@ -53,7 +53,7 @@ class _CorrectionSheetState extends State<_CorrectionSheet> {
       _CorrectionResult(_paymentMethod, notes.isEmpty ? null : notes, reason),
     );
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -103,12 +103,12 @@ class _CorrectionSheetState extends State<_CorrectionSheet> {
     );
   }
 }
- 
+
 class SaleDetailScreen extends StatelessWidget {
   final int saleId;
- 
+
   const SaleDetailScreen({super.key, required this.saleId});
- 
+
   Future<void> _correctSale(BuildContext context, Sale sale) async {
     final result = await showModalBottomSheet<_CorrectionResult>(
       context: context,
@@ -117,7 +117,7 @@ class SaleDetailScreen extends StatelessWidget {
       builder: (_) => _CorrectionSheet(sale: sale),
     );
     if (result == null) return;
- 
+
     await DatabaseHelper.instance.updateSale(Sale(
       id: sale.id,
       date: sale.date,
@@ -125,6 +125,8 @@ class SaleDetailScreen extends StatelessWidget {
       customerName: sale.customerName,
       notes: result.notes,
       discountAmount: sale.discountAmount,
+      taxRate: sale.taxRate,
+      taxAmount: sale.taxAmount,
       paymentMethod: result.paymentMethod,
       amountPaid: sale.amountPaid,
       changeAmount: sale.changeAmount,
@@ -134,7 +136,7 @@ class SaleDetailScreen extends StatelessWidget {
     ));
     if (context.mounted) Navigator.pop(context, true);
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,12 +208,12 @@ class SaleDetailScreen extends StatelessWidget {
           if (sale == null) {
             return const Center(child: Text('Sale not found'));
           }
- 
+
           final subtotal = sale.items.fold<double>(
             0,
             (sum, line) => sum + line.quantity * line.price,
           );
- 
+
           return ListView(
             padding: const EdgeInsets.all(AppTheme.spacing16),
             children: [
@@ -316,6 +318,13 @@ class SaleDetailScreen extends StatelessWidget {
                           trailing: Text(
                             '-${AppTheme.formatMoney(sale.discountAmount)}',
                           ),
+                        ),
+                      if (sale.taxAmount > 0)
+                        ListTile(
+                          title: Text(
+                            'Tax (${sale.taxRate.toStringAsFixed(1)}%)',
+                          ),
+                          trailing: Text(AppTheme.formatMoney(sale.taxAmount)),
                         ),
                       ListTile(
                         title: Text(
