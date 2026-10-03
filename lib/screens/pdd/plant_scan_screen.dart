@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nthaka_eco/app/app_theme.dart';
 import 'package:nthaka_eco/database/database_helper.dart';
@@ -35,30 +36,43 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
   CvInferenceResult? _result;
   Uint8List? _previewBytes;
   bool _busy = false;
+  bool _saving = false;
 
   final List<DiseaseReport> _history = [];
   int _historyOffset = 0;
+  int _historyGeneration = 0;
   bool _historyHasMore = true;
   bool _loadingHistory = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCrops();
-    _loadHistory(reset: true);
     _scrollController.addListener(_onScroll);
+    _loadHistory(reset: true);
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _loadCrops();
+    await _recoverLostData();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _previewBytes = null;
     ImageProcessingService.clearPreviewCache();
     super.dispose();
   }
 
+  void _toast(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   void _onScroll() {
-    if (!_historyHasMore || _loadingHistory) {
+    if (!_historyHasMore || _loadingHistory || !_scrollController.hasClients) {
       return;
     }
     if (_scrollController.position.pixels >=
@@ -68,137 +82,182 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
   }
 
   Future<void> _loadCrops() async {
-    final crops = await DatabaseHelper.instance.getCropNames();
-    if (!mounted) {
-      return;
+    try {
+      final crops = await DatabaseHelper.instance.getCropNames();
+      if (!mounted) return;
+      setState(() {
+        _crops = crops;
+        _selectedCrop = crops.isNotEmpty ? crops.first : null;
+      });
+    } catch (_) {
+      _toast('Could not load the crop list.');
     }
-    setState(() {
-      _crops = crops;
-      _selectedCrop = crops.isNotEmpty ? crops.first : null;
-    });
   }
 
+  /// Loads a page of history. A reset always runs (and wins over any load that
+  /// is still in flight); a normal "load more" is skipped while one is running.
   Future<void> _loadHistory({bool reset = false}) async {
-    if (_loadingHistory) {
+    if (reset) {
+      _historyGeneration++;
+      _historyOffset = 0;
+      _historyHasMore = true;
+    } else if (_loadingHistory || !_historyHasMore) {
       return;
     }
+
+    final generation = _historyGeneration;
+    final offset = _historyOffset;
     setState(() => _loadingHistory = true);
 
-    if (reset) {
-      _historyOffset = 0;
-      _history.clear();
-      _historyHasMore = true;
+    try {
+      final page = await DatabaseHelper.instance.getDiseaseReportsPaged(
+        limit: _pageSize,
+        offset: offset,
+      );
+      if (!mounted || generation != _historyGeneration) return;
+      setState(() {
+        if (reset) _history.clear();
+        _history.addAll(page.items);
+        _historyOffset = offset + page.items.length;
+        _historyHasMore = page.hasMore;
+      });
+    } catch (_) {
+      if (mounted && generation == _historyGeneration) {
+        _toast('Could not load scan history.');
+      }
+    } finally {
+      if (mounted && generation == _historyGeneration) {
+        setState(() => _loadingHistory = false);
+      }
     }
-
-    final page = await DatabaseHelper.instance.getDiseaseReportsPaged(
-      limit: _pageSize,
-      offset: _historyOffset,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _history.addAll(page.items);
-      _historyOffset += page.items.length;
-      _historyHasMore = page.hasMore;
-      _loadingHistory = false;
-    });
   }
 
-  Future<void> _captureAndAnalyze() async {
-    if (_selectedCrop == null || _busy) {
-      return;
+  /// On low-memory Android phones the system can kill this screen while the
+  /// camera is open. This restores the photo that was just taken.
+  Future<void> _recoverLostData() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final response = await _picker.retrieveLostData();
+      final lost = response.file;
+      final crop = _selectedCrop;
+      if (response.isEmpty || lost == null || crop == null || !mounted) return;
+
+      setState(() => _busy = true);
+      try {
+        await _analyze(File(lost.path), crop);
+        _toast('Restored your last photo. Check the crop is correct.');
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    } catch (_) {
+      // Nothing to recover, or recovery failed. Safe to ignore.
     }
+  }
 
-    setState(() {
-      _busy = true;
-      _result = null;
-      _previewBytes = null;
-    });
+  Future<void> _scan(ImageSource source) async {
+    final crop = _selectedCrop;
+    if (crop == null || _busy || _saving) return;
 
+    setState(() => _busy = true);
     try {
       final picked = await _picker.pickImage(
-        source: ImageSource.camera,
+        source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
-      if (picked == null) {
-        return;
-      }
-
-      final sourceFile = File(picked.path);
-      final preview = await ImageProcessingService.previewBytes(sourceFile);
-      final result = await PlantDiseaseCvService.instance.analyzeCapture(
-        sourceImage: sourceFile,
-        crop: _selectedCrop!,
-      );
-
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _previewBytes = preview;
-        _result = result;
-      });
+      if (picked == null) return; // User cancelled: keep any previous result.
+      await _analyze(File(picked.path), crop);
+    } catch (e) {
+      _toast(_scanErrorMessage(e));
     } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
+      if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _analyze(File sourceFile, String crop) async {
+    if (mounted) {
+      setState(() {
+        _result = null;
+        _previewBytes = null;
+      });
+    }
+    final preview = await ImageProcessingService.previewBytes(sourceFile);
+    final result = await PlantDiseaseCvService.instance.analyzeCapture(
+      sourceImage: sourceFile,
+      crop: crop,
+    );
+    if (!mounted) return;
+    setState(() {
+      _previewBytes = preview;
+      _result = result;
+    });
   }
 
   Future<void> _saveResult() async {
     final result = _result;
-    if (result == null) {
-      return;
+    if (result == null || _saving || _busy) return;
+
+    setState(() => _saving = true);
+    try {
+      final details = await showModalBottomSheet<ScanDetails>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => const _SaveScanSheet(),
+      );
+      if (details == null || !mounted) return;
+
+      final savedReport = await DatabaseHelper.instance.createDiseaseReport(
+        DiseaseReport(
+          id: 0,
+          crop: result.crop,
+          disease: result.disease,
+          confidence: result.confidence,
+          imagePath: result.processedImagePath,
+          detectedAt: DateTime.now(),
+          location: details.location.isEmpty ? null : details.location,
+          notes: details.notes.isEmpty ? null : details.notes,
+          severity: details.severity,
+          followUpAt: details.followUpAt,
+        ),
+      );
+
+      // The report is already saved. A reminder failure (for example,
+      // notification permission off) must not look like a failed save.
+      var reminderFailed = false;
+      try {
+        await FollowUpNotificationService.schedule(
+          reportId: savedReport.id,
+          crop: savedReport.crop,
+          disease: savedReport.disease,
+          dueAt: details.followUpAt,
+        );
+      } catch (_) {
+        reminderFailed = true;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _result = null;
+        _previewBytes = null;
+      });
+      ImageProcessingService.clearPreviewCache();
+      _toast(reminderFailed
+          ? 'Report saved, but the reminder could not be scheduled.'
+          : 'Report saved.');
+      await _loadHistory(reset: true);
+    } catch (_) {
+      _toast('Could not save the report. Please try again.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    final details = await showModalBottomSheet<ScanDetails>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => const _SaveScanSheet(),
-    );
-    if (details == null || !mounted) return;
-
-    final savedReport = await DatabaseHelper.instance.createDiseaseReport(
-      DiseaseReport(
-        id: 0,
-        crop: result.crop,
-        disease: result.disease,
-        confidence: result.confidence,
-        imagePath: result.processedImagePath,
-        detectedAt: DateTime.now(),
-        location: details.location.isEmpty ? null : details.location,
-        notes: details.notes.isEmpty ? null : details.notes,
-        severity: details.severity,
-        followUpAt: details.followUpAt,
-      ),
-    );
-    await FollowUpNotificationService.schedule(
-      reportId: savedReport.id,
-      crop: savedReport.crop,
-      disease: savedReport.disease,
-      dueAt: details.followUpAt,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _result = null;
-      _previewBytes = null;
-    });
-    ImageProcessingService.clearPreviewCache();
-    await _loadHistory(reset: true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final canScan = _selectedCrop != null && !_busy && !_saving;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Plant scan')),
       body: ListView(
@@ -226,9 +285,12 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
           const SizedBox(height: AppTheme.spacing16),
           DropdownButtonFormField<String>(
             value: _selectedCrop,
-            decoration: const InputDecoration(
+            isExpanded: true,
+            decoration: InputDecoration(
               labelText: 'Crop',
-              helperText: 'Choose the crop shown in the photo before scanning.',
+              helperText: _crops.isEmpty
+                  ? 'No crops available yet.'
+                  : 'Choose the crop shown in the photo before scanning.',
             ),
             items: _crops
                 .map(
@@ -238,20 +300,34 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
                   ),
                 )
                 .toList(),
-            onChanged: (value) => setState(() => _selectedCrop = value),
+            onChanged: _busy ? null : (v) => setState(() => _selectedCrop = v),
           ),
           const SizedBox(height: AppTheme.spacing16),
-          FilledButton.icon(
-            onPressed: _busy ? null : _captureAndAnalyze,
-            icon: _busy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.photo_camera),
-            label: Text(_busy ? 'Analyzing…' : 'Take photo'),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: canScan ? () => _scan(ImageSource.camera) : null,
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('Take photo'),
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacing12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: canScan ? () => _scan(ImageSource.gallery) : null,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Gallery'),
+                ),
+              ),
+            ],
           ),
+          if (_busy) ...[
+            const SizedBox(height: AppTheme.spacing12),
+            const LinearProgressIndicator(),
+            const SizedBox(height: AppTheme.spacing8),
+            const Text('Analyzing…', textAlign: TextAlign.center),
+          ],
           if (_previewBytes != null && _result != null) ...[
             const SizedBox(height: AppTheme.spacing16),
             ClipRRect(
@@ -271,8 +347,8 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
             ),
             const SizedBox(height: AppTheme.spacing12),
             FilledButton(
-              onPressed: _saveResult,
-              child: const Text('Save report'),
+              onPressed: (_saving || _busy) ? null : _saveResult,
+              child: Text(_saving ? 'Saving…' : 'Save report'),
             ),
           ],
           const SizedBox(height: AppTheme.spacing24),
@@ -280,36 +356,9 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
           const SizedBox(height: AppTheme.spacing8),
           if (_history.isEmpty && !_loadingHistory)
             const Text(
-                'No scans saved yet. Take a photo, review the result, then save it here.')
+                'No scans saved yet. Take a photo or choose one from your gallery, review the result, then save it here.')
           else
-            ..._history.map(
-              (report) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('${report.crop} · ${report.disease}'),
-                subtitle: Text(
-                  [
-                    if (report.severity != null) '${report.severity} severity',
-                    if (report.location?.isNotEmpty ?? false) report.location!,
-                    if (report.followUpAt != null)
-                      'Follow up: ${report.followUpAt!.toLocal().toString().split(' ').first}',
-                  ].join(' · '),
-                ),
-                trailing: report.imagePath == null
-                    ? null
-                    : SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Image.file(
-                          File(report.imagePath!),
-                          fit: BoxFit.cover,
-                          cacheWidth: 96,
-                          cacheHeight: 96,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
-              ),
-            ),
+            ..._history.map(_buildHistoryTile),
           if (_loadingHistory)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppTheme.spacing16),
@@ -319,6 +368,46 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
       ),
     );
   }
+
+  Widget _buildHistoryTile(DiseaseReport report) {
+    final parts = [
+      if (report.severity != null) '${report.severity} severity',
+      if (report.location?.isNotEmpty ?? false) report.location!,
+      if (report.followUpAt != null)
+        'Follow up: ${report.followUpAt!.toLocal().toString().split(' ').first}',
+    ];
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text('${report.crop} · ${report.disease}'),
+      subtitle: parts.isEmpty ? null : Text(parts.join(' · ')),
+      trailing: report.imagePath == null
+          ? null
+          : SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.file(
+                File(report.imagePath!),
+                fit: BoxFit.cover,
+                cacheWidth: 96,
+                cacheHeight: 96,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.broken_image_outlined),
+              ),
+            ),
+    );
+  }
+}
+
+String _scanErrorMessage(Object error) {
+  if (error is PlatformException) {
+    switch (error.code) {
+      case 'camera_access_denied':
+        return 'Camera permission is off. Turn it on in Settings, or choose a photo from your gallery.';
+      case 'photo_access_denied':
+        return 'Photo access is off. Turn it on in Settings.';
+    }
+  }
+  return 'Could not analyze that photo. Please try another one.';
 }
 
 /// Owns and disposes its own controllers, so they are only disposed after the
