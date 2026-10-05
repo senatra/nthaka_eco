@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nthaka_eco/app/app_preferences.dart';
 
@@ -36,7 +37,7 @@ abstract final class AppTheme {
   static final destructiveIconButtonStyle = ButtonStyle(
     minimumSize: const WidgetStatePropertyAll(Size(44, 44)),
     foregroundColor: const WidgetStatePropertyAll(red),
-    overlayColor: WidgetStatePropertyAll(red.withOpacity(0.12)),
+    overlayColor: WidgetStatePropertyAll(red.withValues(alpha: 0.12)),
     shape: WidgetStatePropertyAll(
       RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(controlRadius),
@@ -100,7 +101,7 @@ abstract final class AppTheme {
       onSurface: onSurface,
       onSurfaceVariant: secondaryText,
       outline: separator,
-      outlineVariant: separator.withOpacity(isDark ? 0.7 : 0.65),
+      outlineVariant: separator.withValues(alpha: isDark ? 0.7 : 0.65),
     );
 
     final roundedControl = RoundedRectangleBorder(
@@ -108,7 +109,9 @@ abstract final class AppTheme {
     );
     final roundedCard = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(cardRadius),
-      side: BorderSide(color: separator.withOpacity(isDark ? 0.72 : 0.55)),
+      side: BorderSide(
+        color: separator.withValues(alpha: isDark ? 0.72 : 0.55),
+      ),
     );
 
     return ThemeData(
@@ -129,7 +132,7 @@ abstract final class AppTheme {
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0.5,
-        backgroundColor: surface.withOpacity(0.92),
+        backgroundColor: surface.withValues(alpha: 0.92),
         foregroundColor: onSurface,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
@@ -141,15 +144,18 @@ abstract final class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
         height: 72,
-        backgroundColor: surface.withOpacity(0.96),
+        backgroundColor: surface.withValues(alpha: 0.96),
         indicatorColor: primaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStatePropertyAll(
           TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: secondaryText),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: secondaryText,
+          ),
         ),
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: blue,
         unselectedLabelColor: secondaryText,
         indicatorColor: blue,
@@ -160,24 +166,29 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.08),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         surfaceTintColor: Colors.transparent,
         shape: roundedCard,
         color: surface,
         margin: EdgeInsets.zero,
       ),
-      dividerTheme:
-          DividerThemeData(color: separator.withOpacity(0.7), space: 1),
+      dividerTheme: DividerThemeData(
+        color: separator.withValues(alpha: 0.7),
+        space: 1,
+      ),
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: spacing16, vertical: spacing4),
+          horizontal: spacing16,
+          vertical: spacing4,
+        ),
         iconColor: blue,
         textColor: onSurface,
         subtitleTextStyle: TextStyle(fontSize: 13, color: secondaryText),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(controlRadius)),
+          borderRadius: BorderRadius.circular(controlRadius),
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
@@ -201,7 +212,8 @@ abstract final class AppTheme {
           backgroundColor: WidgetStatePropertyAll(fieldFill),
           foregroundColor: const WidgetStatePropertyAll(blue),
           side: WidgetStatePropertyAll(
-              BorderSide(color: separator.withOpacity(0.7))),
+            BorderSide(color: separator.withValues(alpha: 0.7)),
+          ),
           shape: WidgetStatePropertyAll(roundedControl),
           textStyle: const WidgetStatePropertyAll(
             TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -242,17 +254,23 @@ abstract final class AppTheme {
         hintStyle: TextStyle(fontSize: 15, color: secondaryText),
         helperStyle: TextStyle(fontSize: 13, color: secondaryText),
         errorStyle: const TextStyle(
-            fontSize: 13, color: red, fontWeight: FontWeight.w500),
+          fontSize: 13,
+          color: red,
+          fontWeight: FontWeight.w500,
+        ),
         prefixIconColor: secondaryText,
         suffixIconColor: secondaryText,
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: spacing12, vertical: spacing12),
+          horizontal: spacing12,
+          vertical: spacing12,
+        ),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(controlRadius),
-            borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(controlRadius),
+          borderSide: BorderSide.none,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(controlRadius),
-          borderSide: BorderSide(color: separator.withOpacity(0.75)),
+          borderSide: BorderSide(color: separator.withValues(alpha: 0.75)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(controlRadius),
@@ -292,21 +310,29 @@ abstract final class AppTheme {
         backgroundColor: fieldFill,
         selectedColor: primaryContainer,
         labelStyle: TextStyle(fontSize: 13, color: onSurface),
-        side: BorderSide(color: separator.withOpacity(0.75)),
+        side: BorderSide(color: separator.withValues(alpha: 0.75)),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(controlRadius)),
+          borderRadius: BorderRadius.circular(controlRadius),
+        ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 8,
-        shadowColor: Colors.black.withOpacity(0.16),
+        shadowColor: Colors.black.withValues(alpha: 0.16),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(sheetRadius)),
+          borderRadius: BorderRadius.circular(sheetRadius),
+        ),
         titleTextStyle: TextStyle(
-            fontSize: 22, fontWeight: FontWeight.w700, color: onSurface),
-        contentTextStyle:
-            TextStyle(fontSize: 15, height: 1.4, color: secondaryText),
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: onSurface,
+        ),
+        contentTextStyle: TextStyle(
+          fontSize: 15,
+          height: 1.4,
+          color: secondaryText,
+        ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
@@ -326,7 +352,8 @@ abstract final class AppTheme {
         backgroundColor: isDark ? const Color(0xFF2C2C2E) : primaryTextLight,
         contentTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(controlRadius)),
+          borderRadius: BorderRadius.circular(controlRadius),
+        ),
       ),
       datePickerTheme: DatePickerThemeData(
         backgroundColor: surface,
@@ -356,11 +383,20 @@ abstract final class AppTheme {
 
   static TextTheme _textTheme(Color primary, Color secondary) => TextTheme(
         displaySmall: TextStyle(
-            fontSize: 34, fontWeight: FontWeight.w700, color: primary),
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+          color: primary,
+        ),
         headlineMedium: TextStyle(
-            fontSize: 28, fontWeight: FontWeight.w700, color: primary),
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: primary,
+        ),
         titleLarge: TextStyle(
-            fontSize: 22, fontWeight: FontWeight.w700, color: primary),
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: primary,
+        ),
         titleMedium: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w600,
@@ -379,12 +415,21 @@ abstract final class AppTheme {
         bodyLarge: TextStyle(fontSize: 17, height: 1.4, color: primary),
         bodyMedium: TextStyle(fontSize: 15, height: 1.4, color: primary),
         labelLarge: TextStyle(
-            fontSize: 15, fontWeight: FontWeight.w600, color: primary),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: primary,
+        ),
         bodySmall: TextStyle(fontSize: 13, height: 1.35, color: secondary),
         labelMedium: TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w600, color: secondary),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: secondary,
+        ),
         labelSmall: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w600, color: secondary),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: secondary,
+        ),
       );
 
   static String formatMoney(double value) =>
