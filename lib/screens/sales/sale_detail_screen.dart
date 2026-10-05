@@ -71,7 +71,7 @@ class _CorrectionSheetState extends State<_CorrectionSheet> {
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppTheme.spacing12),
           DropdownButtonFormField<String>(
-            value: _paymentMethod,
+            initialValue: _paymentMethod,
             decoration: const InputDecoration(labelText: 'Payment method'),
             items: const ['Cash', 'Mobile money', 'Card']
                 .map((v) => DropdownMenuItem(value: v, child: Text(v)))

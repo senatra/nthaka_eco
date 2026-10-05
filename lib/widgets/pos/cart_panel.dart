@@ -37,18 +37,18 @@ class CartPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final onPanel = darkPanel ? Colors.white : theme.colorScheme.onSurface;
     final muted = darkPanel
-        ? Colors.white.withOpacity(0.65)
+        ? Colors.white.withValues(alpha: 0.65)
         : theme.colorScheme.onSurfaceVariant;
     final panelBg =
         darkPanel ? AppTheme.posPanelDark : theme.colorScheme.surface;
     final lineBg = darkPanel
         ? AppTheme.posPanelDarkElevated
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.35);
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35);
 
     return Material(
       color: panelBg,
       elevation: darkPanel ? 0 : 4,
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.12),
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -99,7 +99,7 @@ class CartPanel extends StatelessWidget {
                         Icon(
                           Icons.touch_app_outlined,
                           size: 40,
-                          color: muted.withOpacity(0.7),
+                          color: muted.withValues(alpha: 0.7),
                         ),
                         const SizedBox(height: AppTheme.spacing8),
                         Text(
@@ -164,7 +164,7 @@ class CartPanel extends StatelessWidget {
                                   onIncrement: () => onQtyChanged(line, 1),
                                   foreground: onPanel,
                                   background: darkPanel
-                                      ? Colors.white.withOpacity(0.08)
+                                      ? Colors.white.withValues(alpha: 0.08)
                                       : theme.colorScheme.surface,
                                 ),
                                 IconButton(
@@ -201,7 +201,7 @@ class CartPanel extends StatelessWidget {
               border: Border(
                 top: BorderSide(
                   color: darkPanel
-                      ? Colors.white.withOpacity(0.08)
+                      ? Colors.white.withValues(alpha: 0.08)
                       : theme.colorScheme.outlineVariant,
                 ),
               ),
@@ -248,7 +248,7 @@ class CartPanel extends StatelessWidget {
                       disabledBackgroundColor: (darkPanel
                               ? Colors.white
                               : theme.colorScheme.onSurface)
-                          .withOpacity(0.12),
+                          .withValues(alpha: 0.12),
                       textStyle: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -392,12 +392,12 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? foreground : foreground.withOpacity(0.35);
+    final color = enabled ? foreground : foreground.withValues(alpha: 0.35);
 
     return Material(
       color: destructive
-          ? foreground.withOpacity(0.08)
-          : foreground.withOpacity(0.06),
+          ? foreground.withValues(alpha: 0.08)
+          : foreground.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: enabled ? onTap : null,

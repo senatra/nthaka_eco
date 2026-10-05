@@ -284,7 +284,7 @@ class _PlantScanScreenState extends State<PlantScanScreen> {
           ),
           const SizedBox(height: AppTheme.spacing16),
           DropdownButtonFormField<String>(
-            value: _selectedCrop,
+            initialValue: _selectedCrop,
             isExpanded: true,
             decoration: InputDecoration(
               labelText: 'Crop',
@@ -472,7 +472,7 @@ class _SaveScanSheetState extends State<_SaveScanSheet> {
           ),
           const SizedBox(height: AppTheme.spacing12),
           DropdownButtonFormField<String>(
-            value: _severity,
+            initialValue: _severity,
             decoration: const InputDecoration(labelText: 'Severity'),
             items: const ['Low', 'Moderate', 'High']
                 .map((value) =>

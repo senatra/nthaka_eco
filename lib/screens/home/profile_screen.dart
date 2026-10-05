@@ -404,7 +404,7 @@ class _SalesSettingsSheetState extends State<_SalesSettingsSheet> {
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppTheme.spacing12),
           DropdownButtonFormField<String>(
-            value: _payment,
+            initialValue: _payment,
             decoration:
                 const InputDecoration(labelText: 'Default payment method'),
             items: const ['Cash', 'Mobile money', 'Card']

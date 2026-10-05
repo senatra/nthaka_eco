@@ -145,7 +145,7 @@ class ProductGrid extends StatelessWidget {
                           ),
                           Icon(
                             Icons.add_circle,
-                            color: theme.colorScheme.primary.withOpacity(0.85),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.85),
                           ),
                         ],
                       ),

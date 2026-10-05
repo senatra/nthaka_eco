@@ -33,7 +33,7 @@ class _AuditBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(.14),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(

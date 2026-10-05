@@ -192,7 +192,7 @@ class _BatchEntrySheetState extends State<_BatchEntrySheet> {
               const Text('Receiving a batch adds its quantity to stock.'),
               const SizedBox(height: AppTheme.spacing16),
               DropdownButtonFormField<Item>(
-                value: _item,
+                initialValue: _item,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Item'),
                 items: widget.items

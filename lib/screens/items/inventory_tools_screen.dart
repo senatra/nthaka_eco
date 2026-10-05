@@ -259,7 +259,8 @@ class _StockEntrySheetState extends State<_StockEntrySheet> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<Item>(
-                      value: _selectedItem,
+                      key: ValueKey(_selectedItem.itemId),
+                      initialValue: _selectedItem,
                       isExpanded: true,
                       decoration: const InputDecoration(labelText: 'Item'),
                       items: widget.items
@@ -320,7 +321,7 @@ class _StockEntrySheetState extends State<_StockEntrySheet> {
               if (!widget.isCount) ...[
                 const SizedBox(height: AppTheme.spacing12),
                 DropdownButtonFormField<String>(
-                  value: _reason,
+                  initialValue: _reason,
                   decoration: const InputDecoration(labelText: 'Reason'),
                   items: const [
                     'Restock',
