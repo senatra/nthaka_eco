@@ -49,15 +49,13 @@ class ReportExportService {
     final file = File(p.join(exportsDir.path,
         'cash_up_${DateTime.now().millisecondsSinceEpoch}.pdf'));
     await file.writeAsBytes(await doc.save());
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'Nthaka.Eco daily cash-up');
+    await _shareFile(file, 'Nthaka.Eco daily cash-up');
   }
 
   static Future<void> shareReceiptPdf(Sale sale,
       {String businessName = 'Nthaka.Eco'}) async {
     final file = await _writeReceiptPdf(sale, businessName: businessName);
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'Nthaka.Eco receipt #${sale.id}');
+    await _shareFile(file, 'Nthaka.Eco receipt #${sale.id}');
   }
 
   static Future<void> shareCsv({
@@ -66,8 +64,7 @@ class ReportExportService {
     required DateTime endExclusive,
   }) async {
     final file = await _writeCsv(report, start, endExclusive);
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'Nthaka.Eco sales report');
+    await _shareFile(file, 'Nthaka.Eco sales report');
   }
 
   static Future<void> sharePdf({
@@ -76,8 +73,13 @@ class ReportExportService {
     required DateTime endExclusive,
   }) async {
     final file = await _writePdf(report, start, endExclusive);
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'Nthaka.Eco sales report');
+    await _shareFile(file, 'Nthaka.Eco sales report');
+  }
+
+  static Future<void> _shareFile(File file, String text) async {
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], text: text),
+    );
   }
 
   static Future<File> _writeCsv(

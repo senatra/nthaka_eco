@@ -10,7 +10,7 @@ abstract final class FollowUpNotificationService {
     if (_ready) return;
     tz.initializeTimeZones();
     await _notifications.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       ),
     );
@@ -34,11 +34,11 @@ abstract final class FollowUpNotificationService {
     );
     if (scheduled.isBefore(tz.TZDateTime.now(tz.local))) return;
     await _notifications.zonedSchedule(
-      reportId,
-      'Crop follow-up due',
-      'Check your $crop for $disease today.',
-      scheduled,
-      const NotificationDetails(
+      id: reportId,
+      title: 'Crop follow-up due',
+      body: 'Check your $crop for $disease today.',
+      scheduledDate: scheduled,
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'crop_follow_ups',
           'Crop follow-ups',
@@ -48,8 +48,6 @@ abstract final class FollowUpNotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 }
