@@ -39,7 +39,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     if (_hasMore &&
         !_loading &&
         _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200) _loadPage();
+            _scrollController.position.maxScrollExtent - 200) {
+      _loadPage();
+    }
   }
 
   Future<void> _loadPage({bool reset = false}) async {
